@@ -30,7 +30,7 @@ public class CarcellProtocol extends BaseProtocol {
 
     public CarcellProtocol() {
         super("carcell");
-        setSupportedDataCommands(
+        setSupportedCommands(
                 Command.TYPE_ENGINE_STOP,
                 Command.TYPE_ENGINE_RESUME);
     }

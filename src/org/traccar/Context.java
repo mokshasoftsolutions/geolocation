@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 - 2017 Anton Tananaev (anton@traccar.org)
+ * Copyright 2015 - 2016 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.ning.http.client.AsyncHttpClient;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Properties;
 
 import org.apache.velocity.app.VelocityEngine;
@@ -44,14 +43,12 @@ import org.traccar.geocoder.MapQuestGeocoder;
 import org.traccar.geocoder.NominatimGeocoder;
 import org.traccar.geocoder.OpenCageGeocoder;
 import org.traccar.geocoder.Geocoder;
-import org.traccar.geolocation.UnwiredGeolocationProvider;
 import org.traccar.helper.Log;
 import org.traccar.geolocation.GoogleGeolocationProvider;
 import org.traccar.geolocation.GeolocationProvider;
 import org.traccar.geolocation.MozillaGeolocationProvider;
 import org.traccar.geolocation.OpenCellIdGeolocationProvider;
 import org.traccar.notification.EventForwarder;
-import org.traccar.smpp.SmppClient;
 import org.traccar.web.WebServer;
 
 public final class Context {
@@ -179,12 +176,6 @@ public final class Context {
         return statisticsManager;
     }
 
-    private static SmppClient smppClient;
-
-    public static SmppClient getSmppManager() {
-        return smppClient;
-    }
-
     public static void init(String[] arguments) throws Exception {
 
         config = new Config();
@@ -217,12 +208,15 @@ public final class Context {
             String type = config.getString("geocoder.type", "google");
             String url = config.getString("geocoder.url");
             String key = config.getString("geocoder.key");
-            String language = config.getString("geocoder.language");
 
             int cacheSize = config.getInteger("geocoder.cacheSize");
             switch (type) {
                 case "nominatim":
-                    geocoder = new NominatimGeocoder(url, key, language, cacheSize);
+                    if (key != null) {
+                        geocoder = new NominatimGeocoder(url, key, cacheSize);
+                    } else {
+                        geocoder = new NominatimGeocoder(url, cacheSize);
+                    }
                     break;
                 case "gisgraphy":
                     geocoder = new GisgraphyGeocoder(url, cacheSize);
@@ -240,17 +234,23 @@ public final class Context {
                     geocoder = new FactualGeocoder(url, key, cacheSize);
                     break;
                 case "geocodefarm":
-                    geocoder = new GeocodeFarmGeocoder(key, language, cacheSize);
-                    break;
+                    if (key != null) {
+                        geocoder = new GeocodeFarmGeocoder(key, cacheSize);
+                    } else {
+                        geocoder = new GeocodeFarmGeocoder(cacheSize);
+                    }
                 default:
-                    geocoder = new GoogleGeocoder(key, language, cacheSize);
+                    if (key != null) {
+                        geocoder = new GoogleGeocoder(key, cacheSize);
+                    } else {
+                        geocoder = new GoogleGeocoder(cacheSize);
+                    }
                     break;
             }
         }
 
         if (config.getBoolean("geolocation.enable")) {
             String type = config.getString("geolocation.type", "mozilla");
-            String url = config.getString("geolocation.url");
             String key = config.getString("geolocation.key");
 
             switch (type) {
@@ -260,11 +260,12 @@ public final class Context {
                 case "opencellid":
                     geolocationProvider = new OpenCellIdGeolocationProvider(key);
                     break;
-                case "unwired":
-                    geolocationProvider = new UnwiredGeolocationProvider(url, key);
-                    break;
                 default:
-                    geolocationProvider = new MozillaGeolocationProvider(key);
+                    if (key != null) {
+                        geolocationProvider = new MozillaGeolocationProvider(key);
+                    } else {
+                        geolocationProvider = new MozillaGeolocationProvider();
+                    }
                     break;
             }
         }
@@ -277,24 +278,22 @@ public final class Context {
 
         connectionManager = new ConnectionManager();
 
-        if (config.getBoolean("event.enable")) {
+        if (config.getBoolean("event.geofenceHandler")) {
             geofenceManager = new GeofenceManager(dataManager);
             calendarManager = new CalendarManager(dataManager);
+        }
+
+        if (config.getBoolean("event.enable")) {
             notificationManager = new NotificationManager(dataManager);
             Properties velocityProperties = new Properties();
             velocityProperties.setProperty("file.resource.loader.path",
-                    Context.getConfig().getString("templates.rootPath", "templates") + "/");
+                    Context.getConfig().getString("mail.templatesPath", "templates/mail") + "/");
             velocityProperties.setProperty("runtime.log.logsystem.class",
                     "org.apache.velocity.runtime.log.NullLogChute");
 
-            String address;
-            try {
-                address = config.getString("web.address", InetAddress.getLocalHost().getHostAddress());
-            } catch (UnknownHostException e) {
-                address = "localhost";
-            }
-
-            String webUrl = URIUtil.newURI("http", address, config.getInteger("web.port", 8082), "", "");
+            String address = config.getString("web.address", InetAddress.getLocalHost().getHostAddress());
+            int port = config.getInteger("web.port", 8082);
+            String webUrl = URIUtil.newURI("http", address, port, "", "");
             webUrl = Context.getConfig().getString("web.url", webUrl);
             velocityProperties.setProperty("web.url", webUrl);
 
@@ -311,10 +310,6 @@ public final class Context {
         aliasesManager = new AliasesManager(dataManager);
 
         statisticsManager = new StatisticsManager();
-
-        if (config.getBoolean("sms.smpp.enable")) {
-            smppClient = new SmppClient();
-        }
 
     }
 

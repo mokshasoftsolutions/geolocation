@@ -28,7 +28,7 @@ public class T800xProtocol extends BaseProtocol {
 
     public T800xProtocol() {
         super("t800x");
-        setSupportedDataCommands(
+        setSupportedCommands(
                 Command.TYPE_CUSTOM);
     }
 

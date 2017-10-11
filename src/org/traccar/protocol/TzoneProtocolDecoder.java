@@ -45,7 +45,7 @@ public class TzoneProtocolDecoder extends BaseProtocolDecoder {
             case 0x14:
                 return Position.ALARM_BREAKING;
             case 0x15:
-                return Position.ALARM_ACCELERATION;
+                return Position.ALARM_ACCELETATION;
             case 0x30:
                 return Position.ALARM_PARKING;
             case 0x42:
@@ -119,8 +119,8 @@ public class TzoneProtocolDecoder extends BaseProtocolDecoder {
         if (buf.readUnsignedShort() != 0x2424) {
             return null;
         }
-        int hardware = buf.readUnsignedShort();
-        long firmware = buf.readUnsignedInt();
+        int hardware = buf.readUnsignedShort(); // model
+        buf.readUnsignedInt(); // firmware
 
         String imei = ChannelBuffers.hexDump(buf.readBytes(8)).substring(1);
         DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
@@ -131,9 +131,6 @@ public class TzoneProtocolDecoder extends BaseProtocolDecoder {
         Position position = new Position();
         position.setProtocol(getProtocolName());
         position.setDeviceId(deviceSession.getDeviceId());
-
-        position.set(Position.KEY_VERSION_HW, hardware);
-        position.set(Position.KEY_VERSION_FW, firmware);
 
         position.setDeviceTime(new DateBuilder()
                 .setDate(buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte())
@@ -202,10 +199,10 @@ public class TzoneProtocolDecoder extends BaseProtocolDecoder {
 
         if (blockLength >= 13) {
             position.set(Position.KEY_ALARM, decodeAlarm(buf.readUnsignedByte()));
-            position.set("terminalInfo", buf.readUnsignedByte());
+            buf.readUnsignedByte(); // terminal info
             position.set(Position.PREFIX_IO + 1, buf.readUnsignedShort());
             position.set(Position.KEY_RSSI, buf.readUnsignedByte());
-            position.set("gsmStatus", buf.readUnsignedByte());
+            buf.readUnsignedByte(); // GSM status
             position.set(Position.KEY_BATTERY, buf.readUnsignedShort());
             position.set(Position.KEY_POWER, buf.readUnsignedShort());
             position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShort());

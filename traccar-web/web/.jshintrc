@@ -1,6 +1,6 @@
 {
     // Enforcing
-    "bitwise"       : false,    // true: Prohibit bitwise operators (&, |, ^, etc.)
+    "bitwise"       : true,     // true: Prohibit bitwise operators (&, |, ^, etc.)
     "camelcase"     : true,     // true: Identifiers must be in camelCase
     "curly"         : true,     // true: Require {} for every new block or scope
     "eqeqeq"        : true,     // true: Require triple equals (===) for comparison
@@ -70,7 +70,6 @@
         "ol"        : false,
         "Traccar"   : false,
         "Strings"   : false,
-        "Locale"    : false,
-        "proj4"     : false
+        "Locale"    : false
     }
 }

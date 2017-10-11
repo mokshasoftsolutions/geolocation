@@ -547,5 +547,4 @@ public class DataManager {
                 .setLong("managedUserId", managedUserId)
                 .executeUpdate();
     }
-
 }

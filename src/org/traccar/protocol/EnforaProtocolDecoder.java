@@ -38,7 +38,7 @@ public class EnforaProtocolDecoder extends BaseProtocolDecoder {
 
     private static final Pattern PATTERN = new PatternBuilder()
             .text("GPRMC,")
-            .number("(dd)(dd)(dd).?d*,")         // time (hhmmss)
+            .number("(dd)(dd)(dd).(d+),")        // time
             .expression("([AV]),")               // validity
             .number("(dd)(dd.d+),")              // latitude
             .expression("([NS]),")
@@ -100,15 +100,15 @@ public class EnforaProtocolDecoder extends BaseProtocolDecoder {
         position.setDeviceId(deviceSession.getDeviceId());
 
         DateBuilder dateBuilder = new DateBuilder()
-                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt(), parser.nextInt());
 
         position.setValid(parser.next().equals("A"));
         position.setLatitude(parser.nextCoordinate());
         position.setLongitude(parser.nextCoordinate());
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
-        dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
         position.setTime(dateBuilder.getDate());
 
         return position;

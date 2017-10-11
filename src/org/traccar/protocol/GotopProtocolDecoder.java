@@ -18,6 +18,7 @@ package org.traccar.protocol;
 import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.helper.UnitsConverter;
@@ -37,7 +38,7 @@ public class GotopProtocolDecoder extends BaseProtocolDecoder {
             .expression("[^,]+,")                // type
             .expression("([AV]),")               // validity
             .number("DATE:(dd)(dd)(dd),")        // date (yyddmm)
-            .number("TIME:(dd)(dd)(dd),")        // time (hhmmss)
+            .number("TIME:(dd)(dd)(dd),")        // time
             .number("LAT:(d+.d+)([NS]),")        // latitude
             .number("LOT:(d+.d+)([EW]),")        // longitude
             .text("Speed:").number("(d+.d+),")   // speed
@@ -66,15 +67,18 @@ public class GotopProtocolDecoder extends BaseProtocolDecoder {
 
         position.setValid(parser.next().equals("A"));
 
-        position.setTime(parser.nextDateTime());
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDate(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
         position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.DEG_HEM));
         position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.DEG_HEM));
-        position.setSpeed(UnitsConverter.knotsFromKph(parser.nextDouble(0)));
+        position.setSpeed(UnitsConverter.knotsFromKph(parser.nextDouble()));
 
         position.set(Position.KEY_STATUS, parser.next());
 
-        position.setCourse(parser.nextDouble(0));
+        position.setCourse(parser.nextDouble());
 
         return position;
     }

@@ -102,10 +102,6 @@ public class At2000ProtocolDecoder extends BaseProtocolDecoder {
                 return null;
             }
 
-            if (buf.capacity() <= BLOCK_LENGTH) {
-                return null; // empty message
-            }
-
             byte[] data = new byte[buf.capacity() - BLOCK_LENGTH];
             buf.readBytes(data);
             buf = ChannelBuffers.wrappedBuffer(ByteOrder.LITTLE_ENDIAN, cipher.update(data));
@@ -140,10 +136,10 @@ public class At2000ProtocolDecoder extends BaseProtocolDecoder {
                 position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShort());
                 position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShort());
 
-                position.set(Position.KEY_POWER, buf.readUnsignedShort() * 0.001);
+                position.set(Position.KEY_POWER, buf.readUnsignedShort() + "mV");
 
                 buf.readUnsignedShort(); // cid
-                position.set(Position.KEY_RSSI, buf.readUnsignedByte());
+                buf.readUnsignedByte(); // rssi
                 buf.readUnsignedByte(); // current profile
 
                 position.set(Position.KEY_BATTERY, buf.readUnsignedByte());

@@ -39,7 +39,7 @@ public class MeiligaoProtocolDecoder extends BaseProtocolDecoder {
     }
 
     private static final Pattern PATTERN = new PatternBuilder()
-            .number("(dd)(dd)(dd).?d*,")         // time (hhmmss)
+            .number("(dd)(dd)(dd).?(d+)?,")      // time
             .expression("([AV]),")               // validity
             .number("(d+)(dd.d+),")              // latitude
             .expression("([NS]),")
@@ -72,7 +72,7 @@ public class MeiligaoProtocolDecoder extends BaseProtocolDecoder {
             .compile();
 
     private static final Pattern PATTERN_RFID = new PatternBuilder()
-            .number("|(dd)(dd)(dd),")            // time (hhmmss)
+            .number("|(dd)(dd)(dd),")            // time
             .number("(dd)(dd)(dd),")             // date (ddmmyy)
             .number("(d+)(dd.d+),")              // latitude
             .expression("([NS]),")
@@ -210,50 +210,53 @@ public class MeiligaoProtocolDecoder extends BaseProtocolDecoder {
         }
 
         DateBuilder dateBuilder = new DateBuilder()
-                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        if (parser.hasNext()) {
+            dateBuilder.setMillis(parser.nextInt());
+        }
 
         position.setValid(parser.next().equals("A"));
         position.setLatitude(parser.nextCoordinate());
         position.setLongitude(parser.nextCoordinate());
 
         if (parser.hasNext()) {
-            position.setSpeed(parser.nextDouble(0));
+            position.setSpeed(parser.nextDouble());
         }
 
         if (parser.hasNext()) {
-            position.setCourse(parser.nextDouble(0));
+            position.setCourse(parser.nextDouble());
         }
 
-        dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
         position.setTime(dateBuilder.getDate());
 
         position.set(Position.KEY_HDOP, parser.next());
 
         if (parser.hasNext()) {
-            position.setAltitude(parser.nextDouble(0));
+            position.setAltitude(parser.nextDouble());
         }
 
         position.set(Position.KEY_STATUS, parser.next());
 
         for (int i = 1; i <= 8; i++) {
             if (parser.hasNext()) {
-                position.set(Position.PREFIX_ADC + i, parser.nextHexInt(0));
+                position.set(Position.PREFIX_ADC + i, parser.nextInt(16));
             }
         }
 
         if (parser.hasNext()) {
-            position.set(Position.KEY_RSSI, parser.nextHexInt(0));
+            position.set(Position.KEY_RSSI, parser.nextInt(16));
         }
 
         if (parser.hasNext()) {
-            position.set(Position.KEY_ODOMETER, parser.nextLong(16, 0));
+            position.set(Position.KEY_ODOMETER, parser.nextLong(16));
         }
         if (parser.hasNext()) {
-            position.set(Position.KEY_ODOMETER, parser.nextLong(16, 0));
+            position.set(Position.KEY_ODOMETER, parser.nextLong(16));
         }
 
         if (parser.hasNext()) {
-            position.set(Position.KEY_RFID, parser.nextHexInt(0));
+            position.set(Position.KEY_RFID, parser.nextInt(16));
         }
 
         return position;
@@ -265,7 +268,10 @@ public class MeiligaoProtocolDecoder extends BaseProtocolDecoder {
             return null;
         }
 
-        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY));
+        DateBuilder dateBuilder = new DateBuilder()
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
         position.setValid(true);
         position.setLatitude(parser.nextCoordinate());
@@ -282,21 +288,21 @@ public class MeiligaoProtocolDecoder extends BaseProtocolDecoder {
 
         getLastLocation(position, null);
 
-        position.set(Position.KEY_BATTERY, parser.nextDouble(0));
-        position.set(Position.KEY_RPM, parser.nextInt(0));
-        position.set(Position.KEY_OBD_SPEED, parser.nextInt(0));
-        position.set(Position.KEY_THROTTLE, parser.nextDouble(0));
-        position.set("engineLoad", parser.nextDouble(0));
-        position.set(Position.PREFIX_TEMP + 1, parser.nextInt(0));
-        position.set(Position.KEY_FUEL_CONSUMPTION, parser.nextDouble(0));
-        position.set("averageFuelConsumption", parser.nextDouble(0));
-        position.set("drivingRange", parser.nextDouble(0));
-        position.set(Position.KEY_ODOMETER, parser.nextDouble(0));
-        position.set("singleFuelConsumption", parser.nextDouble(0));
-        position.set("totalFuelConsumption", parser.nextDouble(0));
-        position.set(Position.KEY_DTCS, parser.nextInt(0));
-        position.set("harshAcelerationNo", parser.nextInt(0));
-        position.set("harshBreakerNo", parser.nextInt(0));
+        position.set(Position.KEY_BATTERY, parser.nextDouble());
+        position.set(Position.KEY_RPM, parser.nextInt());
+        position.set(Position.KEY_OBD_SPEED, parser.nextInt());
+        position.set(Position.KEY_THROTTLE, parser.nextDouble());
+        position.set("engineLoad", parser.nextDouble());
+        position.set(Position.PREFIX_TEMP + 1, parser.nextInt());
+        position.set(Position.KEY_FUEL_CONSUMPTION, parser.nextDouble());
+        position.set("averageFuelConsumition", parser.nextDouble());
+        position.set("drivingRange", parser.nextDouble());
+        position.set(Position.KEY_ODOMETER, parser.nextDouble());
+        position.set("singleFuelConsumption", parser.nextDouble());
+        position.set("totalFuelConsumption", parser.nextDouble());
+        position.set(Position.KEY_DTCS, parser.nextInt());
+        position.set("harshAcelerationNo", parser.nextInt());
+        position.set("harshBreakerNo", parser.nextInt());
 
         return position;
     }
@@ -309,15 +315,15 @@ public class MeiligaoProtocolDecoder extends BaseProtocolDecoder {
 
         getLastLocation(position, null);
 
-        position.set("totalIgnitionNo", parser.nextInt(0));
-        position.set("totalDrivingTime", parser.nextDouble(0));
-        position.set("totalIdlingTime", parser.nextDouble(0));
-        position.set("averageHotStartTime", parser.nextInt(0));
-        position.set("averageSpeed", parser.nextInt(0));
-        position.set("historyHighestSpeed", parser.nextInt(0));
-        position.set("historyHighestRpm", parser.nextInt(0));
-        position.set("totalHarshAccerleration", parser.nextInt(0));
-        position.set("totalHarshBrake", parser.nextInt(0));
+        position.set("totalIgnitionNo", parser.nextInt());
+        position.set("totalDrivingTime", parser.nextDouble());
+        position.set("totalIdlingTime", parser.nextDouble());
+        position.set("averageHotStartTime", parser.nextInt());
+        position.set("averageSpeed", parser.nextInt());
+        position.set("historyHighestSpeed", parser.nextInt());
+        position.set("historyHighestRpm", parser.nextInt());
+        position.set("totalHarshAccerleration", parser.nextInt());
+        position.set("totalHarshBrake", parser.nextInt());
 
         return position;
     }

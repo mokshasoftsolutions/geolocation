@@ -23,8 +23,6 @@ import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
 import org.traccar.helper.BitUtil;
 import org.traccar.helper.DateBuilder;
-import org.traccar.model.CellTower;
-import org.traccar.model.Network;
 import org.traccar.model.Position;
 
 import java.net.SocketAddress;
@@ -70,7 +68,7 @@ public class AutoFonProtocolDecoder extends BaseProtocolDecoder {
             buf.readUnsignedByte(); // interval
             buf.skipBytes(8); // settings
         }
-        position.set(Position.KEY_STATUS, buf.readUnsignedByte());
+        buf.readUnsignedByte(); // status
         if (!history) {
             buf.readUnsignedShort();
         }
@@ -86,12 +84,11 @@ public class AutoFonProtocolDecoder extends BaseProtocolDecoder {
         }
 
         position.set(Position.PREFIX_TEMP + 1, buf.readByte());
-
-        int rssi = buf.readUnsignedByte();
-        CellTower cellTower = CellTower.from(
-                buf.readUnsignedShort(), buf.readUnsignedShort(),
-                buf.readUnsignedShort(), buf.readUnsignedShort(), rssi);
-        position.setNetwork(new Network(cellTower));
+        position.set(Position.KEY_RSSI, buf.readUnsignedByte());
+        buf.readUnsignedShort(); // mcc
+        buf.readUnsignedShort(); // mnc
+        buf.readUnsignedShort(); // lac
+        buf.readUnsignedShort(); // cid
 
         int valid = buf.readUnsignedByte();
         position.setValid((valid & 0xc0) != 0);

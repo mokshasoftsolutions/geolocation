@@ -36,8 +36,5 @@ Ext.define('Traccar.model.Notification', {
     }, {
         name: 'mail',
         type: 'bool'
-    }, {
-        name: 'sms',
-        type: 'bool'
     }]
 });

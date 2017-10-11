@@ -10,7 +10,7 @@ public class ThinkRaceProtocolDecoderTest extends ProtocolTest {
 
         ThinkRaceProtocolDecoder decoder = new ThinkRaceProtocolDecoder(new ThinkRaceProtocol());
 
-        verifyNull(decoder, binary(
+        verifyNothing(decoder, binary(
                 "48415349483031343730303134382C8000100134363030303134363139363239343806FF"));
 
         verifyPosition(decoder, binary(

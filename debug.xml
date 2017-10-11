@@ -9,16 +9,15 @@
     <entry key='web.path'>./traccar-web/web</entry>
     <entry key='web.debug'>true</entry>
     <entry key='web.console'>true</entry>
-<!--<suresh>-->
-    <entry key='geocoder.enable'>true</entry>
-    <entry key='geocoder.type'>google</entry>
+
+    <entry key='geocoder.enable'>false</entry>
 
     <entry key='logger.file'>target/tracker-server.log</entry>
 
-   <entry key='database.driver'>com.mysql.jdbc.Driver</entry>
+    <entry key='database.driver'>com.mysql.jdbc.Driver</entry>
     <entry key='database.url'>jdbc:mysql://localhost:3306/jelly?allowMultiQueries=true&amp;autoReconnect=true&amp;useUnicode=yes&amp;characterEncoding=UTF-8&amp;sessionVariables=sql_mode=''</entry>
     <entry key='database.user'>root</entry>
-    <entry key='database.password'>moksha</entry>
+    <entry key='database.password'>siddhu</entry>
 
     <entry key='intellitrac.port'>6037</entry>
 

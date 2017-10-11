@@ -56,14 +56,4 @@ public class Notification extends Extensible {
     public void setMail(boolean mail) {
         this.mail = mail;
     }
-
-    private boolean sms;
-
-    public boolean getSms() {
-        return sms;
-    }
-
-    public void setSms(boolean sms) {
-        this.sms = sms;
-    }
 }

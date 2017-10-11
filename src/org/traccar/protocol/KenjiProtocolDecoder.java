@@ -39,13 +39,13 @@ public class KenjiProtocolDecoder extends BaseProtocolDecoder {
             .number("M(x{6}),")                  // alarm
             .number("O(x{4}),")                  // output
             .number("I(x{4}),")                  // input
-            .number("D(dd)(dd)(dd),")            // time (hhmmss)
+            .number("D(dd)(dd)(dd),")            // time
             .expression("([AV]),")               // valid
             .number("([NS])(dd)(dd.d+),")        // latitude
             .number("([EW])(ddd)(dd.d+),")       // longitude
             .number("T(d+.d+),")                 // speed
             .number("H(d+.d+),")                 // course
-            .number("Y(dd)(dd)(dd),")            // date (ddmmyy)
+            .number("Y(dd)(dd)(dd),")            // date
             .number("G(d+)")                     // satellites
             .any()
             .compile();
@@ -85,24 +85,24 @@ public class KenjiProtocolDecoder extends BaseProtocolDecoder {
         }
         position.setDeviceId(deviceSession.getDeviceId());
 
-        position.set(Position.KEY_ALARM, decodeAlarm(parser.nextHexInt(0)));
-        position.set(Position.KEY_OUTPUT, parser.nextHexInt(0));
-        position.set(Position.KEY_INPUT, parser.nextHexInt(0));
+        position.set(Position.KEY_ALARM, decodeAlarm(parser.nextInt(16)));
+        position.set(Position.KEY_OUTPUT, parser.nextInt(16));
+        position.set(Position.KEY_INPUT, parser.nextInt(16));
 
         DateBuilder dateBuilder = new DateBuilder()
-                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
 
         position.setValid(parser.next().equals("A"));
 
         position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
         position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
-        dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
         position.setTime(dateBuilder.getDate());
 
-        position.set(Position.KEY_SATELLITES, parser.nextInt(0));
+        position.set(Position.KEY_SATELLITES, parser.nextInt());
 
         return position;
     }

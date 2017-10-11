@@ -18,6 +18,7 @@ package org.traccar.protocol;
 import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.model.Position;
@@ -34,8 +35,8 @@ public class FreedomProtocolDecoder extends BaseProtocolDecoder {
     private static final Pattern PATTERN = new PatternBuilder()
             .text("IMEI,")
             .number("(d+),")                     // imei
-            .number("(dddd)/(dd)/(dd), ")        // date (yyyy/dd/mm)
-            .number("(dd):(dd):(dd), ")          // time (hh:mm:ss)
+            .number("(dddd)/(dd)/(dd), ")        // date
+            .number("(dd):(dd):(dd), ")          // time
             .expression("([NS]), ")
             .number("Lat:(dd)(d+.d+), ")         // latitude
             .expression("([EW]), ")
@@ -64,12 +65,15 @@ public class FreedomProtocolDecoder extends BaseProtocolDecoder {
 
         position.setValid(true);
 
-        position.setTime(parser.nextDateTime());
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDate(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
         position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
         position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
 
-        position.setSpeed(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
 
         return position;
     }

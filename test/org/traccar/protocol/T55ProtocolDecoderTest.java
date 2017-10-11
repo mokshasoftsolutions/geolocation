@@ -10,14 +10,11 @@ public class T55ProtocolDecoderTest extends ProtocolTest {
 
         T55ProtocolDecoder decoder = new T55ProtocolDecoder(new T55Protocol());
 
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "086415031C20"));
 
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "358244017671308"));
-
-        verifyPosition(decoder, text(
-                "$GPRMC,073446.000,A,1255.5125,N,07738.2948,E,0.00,0.53,080316,D*71,11,865733027593268,1,090,086,123,456,789,987,12345"));
 
         verifyNotNull(decoder, text(
                 "$GPRMC,161223.000,A,2517.0545,S,05739.1788,W,0.0,0.0,011196,,,A*61"));
@@ -28,16 +25,16 @@ public class T55ProtocolDecoderTest extends ProtocolTest {
         verifyPosition(decoder, text(
                 "$GPRMC,073446.000,A,1255.5125,N,07738.2948,E,0.00,0.53,080316,D*71,11,865733027593268,1,090,086"));
 
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "$GPFID,ID123456ABC"));
 
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "$PGID,359853000144328*0F"));
 
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "$PCPTI,CradlePoint Test,184453,184453.0,6F*57"));
         
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "IMEI 351467108700000"));
         
         verifyPosition(decoder, text(
@@ -97,7 +94,7 @@ public class T55ProtocolDecoderTest extends ProtocolTest {
 
         T55ProtocolDecoder decoder = new T55ProtocolDecoder(new T55Protocol());
 
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "$GPRMC,012006,A,4828.10,N,1353.52,E,0.00,0.00,180915,020.3,E*42"));
 
         verifyPosition(decoder, text(

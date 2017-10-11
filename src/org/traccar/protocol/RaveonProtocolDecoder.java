@@ -18,12 +18,14 @@ package org.traccar.protocol;
 import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.helper.UnitsConverter;
 import org.traccar.model.Position;
 
 import java.net.SocketAddress;
+import java.util.Date;
 import java.util.regex.Pattern;
 
 public class RaveonProtocolDecoder extends BaseProtocolDecoder {
@@ -38,7 +40,7 @@ public class RaveonProtocolDecoder extends BaseProtocolDecoder {
             .number("d+,")
             .number("(-?)(d+)(dd.d+),")          // latitude
             .number("(-?)(d+)(dd.d+),")          // longitude
-            .number("(dd)(dd)(dd),")             // time (hhmmss)
+            .number("(dd)(dd)(dd),")             // time
             .number("(d),")                      // validity
             .number("(d+),")                     // satellites
             .number("(-?d+),")                   // altitude
@@ -75,23 +77,25 @@ public class RaveonProtocolDecoder extends BaseProtocolDecoder {
         position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
         position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
 
-        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.HMS));
+        DateBuilder dateBuilder = new DateBuilder(new Date())
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
-        position.setValid(parser.nextInt(0) != 0);
+        position.setValid(parser.nextInt() != 0);
 
-        position.set(Position.KEY_SATELLITES, parser.nextInt(0));
+        position.set(Position.KEY_SATELLITES, parser.nextInt());
 
-        position.setAltitude(parser.nextInt(0));
+        position.setAltitude(parser.nextInt());
 
-        position.set(Position.PREFIX_TEMP + 1, parser.nextInt(0));
-        position.set(Position.KEY_POWER, parser.nextDouble(0));
-        position.set(Position.KEY_INPUT, parser.nextInt(0));
-        position.set(Position.KEY_RSSI, parser.nextInt(0));
+        position.set(Position.PREFIX_TEMP + 1, parser.nextInt());
+        position.set(Position.KEY_POWER, parser.nextDouble());
+        position.set(Position.KEY_INPUT, parser.nextInt());
+        position.set(Position.KEY_RSSI, parser.nextInt());
 
-        position.setSpeed(UnitsConverter.knotsFromKph(parser.nextInt(0)));
-        position.setCourse(parser.nextInt(0));
+        position.setSpeed(UnitsConverter.knotsFromKph(parser.nextInt()));
+        position.setCourse(parser.nextInt());
 
-        position.set(Position.KEY_ALARM, parser.next());
+        parser.next(); // alerts
 
         return position;
     }

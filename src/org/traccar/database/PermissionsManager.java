@@ -25,13 +25,13 @@ import org.traccar.model.Server;
 import org.traccar.model.User;
 import org.traccar.model.UserPermission;
 
-import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -152,7 +152,6 @@ public class PermissionsManager {
             Log.warning(error);
         }
 
-        deviceUsers.clear();
         for (Map.Entry<Long, Set<Long>> entry : devicePermissions.entrySet()) {
             for (long deviceId : entry.getValue()) {
                 getDeviceUsers(deviceId).add(entry.getKey());
@@ -171,7 +170,7 @@ public class PermissionsManager {
     }
 
     public boolean isManager(long userId) {
-        return users.containsKey(userId) && users.get(userId).getUserLimit() != 0;
+        return users.containsKey(userId) && users.get(userId).getUserLimit() > 0;
     }
 
     public void checkManager(long userId) throws SecurityException {
@@ -188,21 +187,15 @@ public class PermissionsManager {
     }
 
     public void checkUserLimit(long userId) throws SecurityException {
-        int userLimit = users.get(userId).getUserLimit();
-        if (userLimit != -1 && userPermissions.get(userId).size() >= userLimit) {
+        if (!isAdmin(userId) && userPermissions.get(userId).size() >= users.get(userId).getUserLimit()) {
             throw new SecurityException("Manager user limit reached");
         }
     }
 
-    public void checkDeviceLimit(long userId) throws SecurityException, SQLException {
+    public void checkDeviceLimit(long userId) throws SecurityException {
         int deviceLimit = users.get(userId).getDeviceLimit();
-        if (deviceLimit != -1) {
-            int deviceCount = 0;
-            if (isManager(userId)) {
-                deviceCount = Context.getDeviceManager().getManagedDevices(userId).size();
-            } else {
-                deviceCount = getDevicePermissions(userId).size();
-            }
+        if (deviceLimit != 0) {
+            int deviceCount = getDevicePermissions(userId).size();
             if (deviceCount >= deviceLimit) {
                 throw new SecurityException("User device limit reached");
             }
@@ -213,19 +206,9 @@ public class PermissionsManager {
         return users.containsKey(userId) && users.get(userId).getReadonly();
     }
 
-    public boolean isDeviceReadonly(long userId) {
-        return users.containsKey(userId) && users.get(userId).getDeviceReadonly();
-    }
-
     public void checkReadonly(long userId) throws SecurityException {
         if (!isAdmin(userId) && (server.getReadonly() || isReadonly(userId))) {
             throw new SecurityException("Account is readonly");
-        }
-    }
-
-    public void checkDeviceReadonly(long userId) throws SecurityException {
-        if (!isAdmin(userId) && (server.getDeviceReadonly() || isDeviceReadonly(userId))) {
-            throw new SecurityException("Account is device readonly");
         }
     }
 
@@ -245,14 +228,10 @@ public class PermissionsManager {
                 || before.getUserLimit() != after.getUserLimit()) {
             checkAdmin(userId);
         }
-        if (users.containsKey(userId) && users.get(userId).getExpirationTime() != null
-                && (after.getExpirationTime() == null
-                || users.get(userId).getExpirationTime().compareTo(after.getExpirationTime()) < 0)) {
-            checkAdmin(userId);
-        }
         if (before.getReadonly() != after.getReadonly()
-                || before.getDeviceReadonly() != after.getDeviceReadonly()
-                || before.getDisabled() != after.getDisabled()) {
+                || before.getDisabled() != after.getDisabled()
+                || !Objects.equals(before.getExpirationTime(), after.getExpirationTime())
+                || !Objects.equals(before.getToken(), after.getToken())) {
             if (userId == after.getId()) {
                 checkAdmin(userId);
             }
@@ -394,33 +373,6 @@ public class PermissionsManager {
 
     public User getUserByToken(String token) {
         return users.get(usersTokens.get(token));
-    }
-
-    public Object lookupPreference(long userId, String key, Object defaultValue) {
-        String methodName = "get" + key.substring(0, 1).toUpperCase() + key.substring(1);
-        Object preference;
-        Object serverPreference = null;
-        Object userPreference = null;
-        try {
-            Method method = null;
-            method = User.class.getMethod(methodName, (Class<?>[]) null);
-            if (method != null) {
-                userPreference = method.invoke(users.get(userId), (Object[]) null);
-            }
-            method = null;
-            method = Server.class.getMethod(methodName, (Class<?>[]) null);
-            if (method != null) {
-                serverPreference = method.invoke(server, (Object[]) null);
-            }
-        } catch (ReflectiveOperationException | SecurityException | IllegalArgumentException exception) {
-            return defaultValue;
-        }
-        if (server.getForceSettings()) {
-            preference = serverPreference != null ? serverPreference : userPreference;
-        } else {
-            preference = userPreference != null ? userPreference : serverPreference;
-        }
-        return preference != null ? preference : defaultValue;
     }
 
 }

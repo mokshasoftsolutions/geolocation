@@ -23,8 +23,6 @@ import org.traccar.Context;
 import org.traccar.DeviceSession;
 import org.traccar.helper.DateBuilder;
 import org.traccar.helper.UnitsConverter;
-import org.traccar.model.CellTower;
-import org.traccar.model.Network;
 import org.traccar.model.Position;
 
 import java.net.SocketAddress;
@@ -82,7 +80,6 @@ public class AtrackProtocolDecoder extends BaseProtocolDecoder {
     }
 
     private void readCustomData(Position position, ChannelBuffer buf, String form) {
-        CellTower cellTower = new CellTower();
         String[] keys = form.substring(1).split("%");
         for (String key : keys) {
             switch (key) {
@@ -96,24 +93,22 @@ public class AtrackProtocolDecoder extends BaseProtocolDecoder {
                     position.set(Position.KEY_BATTERY, buf.readUnsignedShort());
                     break;
                 case "GQ":
-                    cellTower.setSignalStrength((int) buf.readUnsignedByte());
+                    buf.readUnsignedByte(); // rssi
                     break;
                 case "CE":
-                    cellTower.setCellId(buf.readUnsignedInt());
+                    buf.readUnsignedInt(); // cid
                     break;
                 case "LC":
-                    cellTower.setLocationAreaCode(buf.readUnsignedShort());
+                    buf.readUnsignedShort(); // lac
                     break;
                 case "CN":
-                    int combinedMobileCodes = (int) (buf.readUnsignedInt() % 100000); // cccnn
-                    cellTower.setMobileCountryCode(combinedMobileCodes / 100);
-                    cellTower.setMobileNetworkCode(combinedMobileCodes % 100);
+                    buf.readUnsignedInt(); // mcc + mnc
                     break;
                 case "RL":
                     buf.readUnsignedByte(); // rxlev
                     break;
                 case "PC":
-                    position.set(Position.PREFIX_COUNT + 1, buf.readUnsignedInt());
+                    buf.readUnsignedInt(); // pulse count
                     break;
                 case "AT":
                     position.setAltitude(buf.readUnsignedInt());
@@ -122,7 +117,7 @@ public class AtrackProtocolDecoder extends BaseProtocolDecoder {
                     position.set(Position.KEY_RPM, buf.readUnsignedShort());
                     break;
                 case "GS":
-                    position.set(Position.KEY_RSSI, buf.readUnsignedByte());
+                    buf.readUnsignedByte(); // gsm status
                     break;
                 case "DT":
                     position.set(Position.KEY_ARCHIVE, buf.readUnsignedByte() == 1);
@@ -140,16 +135,16 @@ public class AtrackProtocolDecoder extends BaseProtocolDecoder {
                     position.set(Position.KEY_THROTTLE, buf.readUnsignedByte());
                     break;
                 case "ET":
-                    position.set(Position.PREFIX_TEMP + 1, buf.readUnsignedShort());
+                    buf.readUnsignedShort(); // engine coolant temp
                     break;
                 case "FL":
-                    position.set(Position.KEY_FUEL_LEVEL, buf.readUnsignedByte());
+                    position.set(Position.KEY_FUEL, buf.readUnsignedByte());
                     break;
                 case "ML":
                     buf.readUnsignedByte(); // mil status
                     break;
                 case "FC":
-                    position.set(Position.KEY_FUEL_CONSUMPTION, buf.readUnsignedInt());
+                    buf.readUnsignedInt(); // fuel used
                     break;
                 case "CI":
                     readString(buf); // format string
@@ -172,15 +167,6 @@ public class AtrackProtocolDecoder extends BaseProtocolDecoder {
                 default:
                     break;
             }
-        }
-
-        if (cellTower.getMobileCountryCode() != null
-            && cellTower.getMobileNetworkCode() != null
-            && cellTower.getCellId() != null
-            && cellTower.getLocationAreaCode() != null) {
-            position.setNetwork(new Network(cellTower));
-        } else if (cellTower.getSignalStrength() != null) {
-            position.set(Position.KEY_RSSI, cellTower.getSignalStrength());
         }
     }
 

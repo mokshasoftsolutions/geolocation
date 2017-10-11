@@ -50,13 +50,13 @@ public class UproProtocolDecoder extends BaseProtocolDecoder {
             .compile();
 
     private static final Pattern PATTERN_LOCATION = new PatternBuilder()
-            .number("(dd)(dd)(dd)")              // time (hhmmss)
+            .number("(dd)(dd)(dd)")              // time
             .number("(dd)(dd)(dddd)")            // latitude
             .number("(ddd)(dd)(dddd)")           // longitude
             .number("(d)")                       // flags
             .number("(dd)")                      // speed
             .number("(dd)")                      // course
-            .number("(dd)(dd)(dd)")              // date (ddmmyy)
+            .number("(dd)(dd)(dd)")              // date
             .compile();
 
     private void decodeLocation(Position position, String data) {
@@ -64,13 +64,13 @@ public class UproProtocolDecoder extends BaseProtocolDecoder {
         if (parser.matches()) {
 
             DateBuilder dateBuilder = new DateBuilder()
-                    .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+                    .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
 
             position.setValid(true);
             position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.DEG_MIN_MIN));
             position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.DEG_MIN_MIN));
 
-            int flags = parser.nextInt(0);
+            int flags = parser.nextInt();
             position.setValid(BitUtil.check(flags, 0));
             if (!BitUtil.check(flags, 1)) {
                 position.setLatitude(-position.getLatitude());
@@ -79,10 +79,10 @@ public class UproProtocolDecoder extends BaseProtocolDecoder {
                 position.setLongitude(-position.getLongitude());
             }
 
-            position.setSpeed(parser.nextInt(0) * 2);
-            position.setCourse(parser.nextInt(0) * 10);
+            position.setSpeed(parser.nextInt() * 2);
+            position.setCourse(parser.nextInt() * 10);
 
-            dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+            dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
             position.setTime(dateBuilder.getDate());
 
         }

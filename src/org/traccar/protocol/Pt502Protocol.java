@@ -30,7 +30,7 @@ public class Pt502Protocol extends BaseProtocol {
 
     public Pt502Protocol() {
         super("pt502");
-        setSupportedDataCommands(
+        setSupportedCommands(
                 Command.TYPE_SET_TIMEZONE,
                 Command.TYPE_ALARM_SPEED,
                 Command.TYPE_OUTPUT_CONTROL,

@@ -21,19 +21,16 @@ import javax.json.JsonString;
 
 public class GoogleGeocoder extends JsonGeocoder {
 
-    private static String formatUrl(String key, String language) {
-        String url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f";
-        if (key != null) {
-            url += "&key=" + key;
-        }
-        if (language != null) {
-            url += "&language=" + language;
-        }
-        return url;
+    public GoogleGeocoder() {
+        this(0);
     }
 
-    public GoogleGeocoder(String key, String language, int cacheSize) {
-        super(formatUrl(key, language), cacheSize);
+    public GoogleGeocoder(int cacheSize) {
+        super("http://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f", cacheSize);
+    }
+
+    public GoogleGeocoder(String key, int cacheSize) {
+        super("https://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f&key=" + key, cacheSize);
     }
 
     @Override

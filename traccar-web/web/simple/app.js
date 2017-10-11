@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2017 Anton Tananaev (anton@traccar.org)
+ * Copyright 2016 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,50 +14,21 @@
  * limitations under the License.
  */
 
-if (!Array.prototype.find) {
-  Object.defineProperty(Array.prototype, "find", {
-    value: function(predicate) {
-      var value;
-      for (var i = 0; i < this.length; i++) {
-        value = this[i];
-        if (predicate.call(arguments[1], value, i, this)) {
-          return value;
-        }
-      }
-      return undefined;
-    }
-  });
-}
+var url = 'http://localhost:8082';
+var token = 'TOKEN';
 
-var url = window.location.protocol + '//' + window.location.host;
-var token = (window.location.search.match(/token=([^&#]+)/) || [])[1];
-
-var style = function (label) {
-    return new ol.style.Style({
-        image: new ol.style.Circle({
-            fill: new ol.style.Fill({
-                color: 'teal'
-            }),
-            stroke: new ol.style.Stroke({
-                color: 'black',
-                width: 2
-            }),
-            radius: 7
+var style = new ol.style.Style({
+    image: new ol.style.Circle({
+        fill: new ol.style.Fill({
+            color: 'teal'
         }),
-        text: new ol.style.Text({
-            text: label,
-            fill: new ol.style.Fill({
-                color: 'black'
-            }),
-            stroke: new ol.style.Stroke({
-                color: 'white',
-                width: 2
-            }),
-            font: 'bold 12px sans-serif',
-            offsetY: -16
-        })
-    });
-};
+        stroke: new ol.style.Stroke({
+            color: 'navy',
+            width: 2
+        }),
+        radius: 7
+    })
+});
 
 var source = new ol.source.Vector();
 
@@ -94,43 +65,33 @@ var ajax = function (method, url, callback) {
     xhr.send()
 };
 
-ajax('GET', url + '/api/server', function(server) {
-    ajax('GET', url + '/api/session?token=' + token, function(user) {
+ajax('GET', url + '/api/session?token=' + token, function(user) {
+    ajax('GET', url + '/api/devices', function(devices) {
 
-        map.getView().setCenter(ol.proj.fromLonLat([
-            user.longitude || server.longitude || 0.0,
-            user.latitude || server.latitude || 0.0
-        ]));
-        map.getView().setZoom(user.zoom || server.zoom || 2);
+        var socket = new WebSocket('ws' + url.substring(4) + '/api/socket');
 
-        ajax('GET', url + '/api/devices', function(devices) {
+        socket.onclose = function (event) {
+            console.log('socket closed');
+        };
 
-            var socket = new WebSocket('ws' + url.substring(4) + '/api/socket');
-
-            socket.onclose = function (event) {
-                console.log('socket closed');
-            };
-
-            socket.onmessage = function (event) {
-                var data = JSON.parse(event.data);
-                if (data.positions) {
-                    for (i = 0; i < data.positions.length; i++) {
-                        var position = data.positions[i];
-                        var marker = markers[position.deviceId];
-                        var point = new ol.geom.Point(ol.proj.fromLonLat([position.longitude, position.latitude]));
-                        if (!marker) {
-                            var device = devices.find(function (device) { return device.id === position.deviceId });
-                            marker = new ol.Feature(point);
-                            marker.setStyle(style(device.name));
-                            markers[position.deviceId] = marker;
-                            source.addFeature(marker);
-                        } else {
-                            marker.setGeometry(point);
-                        }
+        socket.onmessage = function (event) {
+            var data = JSON.parse(event.data);
+            if (data.positions) {
+                for (i = 0; i < data.positions.length; i++) {
+                    var position = data.positions[i];
+                    var marker = markers[position.deviceId];
+                    var point = new ol.geom.Point(ol.proj.fromLonLat([position.longitude, position.latitude]));
+                    if (!marker) {
+                        marker = new ol.Feature(point);
+                        marker.setStyle(style);
+                        markers[position.deviceId] = marker;
+                        source.addFeature(marker);
+                    } else {
+                        marker.setGeometry(point);
                     }
                 }
-            };
+            }
+        };
 
-        });
     });
 });

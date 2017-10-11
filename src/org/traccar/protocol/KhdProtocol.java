@@ -28,7 +28,7 @@ public class KhdProtocol extends BaseProtocol {
 
     public KhdProtocol() {
         super("khd");
-        setSupportedDataCommands(
+        setSupportedCommands(
                 Command.TYPE_ENGINE_STOP,
                 Command.TYPE_ENGINE_RESUME);
     }

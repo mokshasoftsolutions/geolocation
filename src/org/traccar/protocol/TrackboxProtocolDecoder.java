@@ -33,7 +33,7 @@ public class TrackboxProtocolDecoder extends BaseProtocolDecoder {
     }
 
     private static final Pattern PATTERN = new PatternBuilder()
-            .number("(dd)(dd)(dd).(ddd),")       // time (hhmmss.sss)
+            .number("(dd)(dd)(dd).(ddd),")       // time
             .number("(dd)(dd.dddd)([NS]),")      // latitude
             .number("(ddd)(dd.dddd)([EW]),")     // longitude
             .number("(d+.d),")                   // hdop
@@ -42,7 +42,7 @@ public class TrackboxProtocolDecoder extends BaseProtocolDecoder {
             .number("(d+.d+),")                  // course
             .number("d+.d+,")                    // speed (kph)
             .number("(d+.d+),")                  // speed (knots)
-            .number("(dd)(dd)(dd),")             // date (ddmmyy)
+            .number("(dd)(dd)(dd),")             // date
             .number("(d+)")                      // satellites
             .compile();
 
@@ -82,23 +82,23 @@ public class TrackboxProtocolDecoder extends BaseProtocolDecoder {
         position.setDeviceId(deviceSession.getDeviceId());
 
         DateBuilder dateBuilder = new DateBuilder()
-                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt(), parser.nextInt());
 
         position.setLatitude(parser.nextCoordinate());
         position.setLongitude(parser.nextCoordinate());
 
         position.set(Position.KEY_HDOP, parser.next());
 
-        position.setAltitude(parser.nextDouble(0));
+        position.setAltitude(parser.nextDouble());
 
-        int fix = parser.nextInt(0);
+        int fix = parser.nextInt();
         position.set(Position.KEY_GPS, fix);
         position.setValid(fix > 0);
 
-        position.setCourse(parser.nextDouble(0));
-        position.setSpeed(parser.nextDouble(0));
+        position.setCourse(parser.nextDouble());
+        position.setSpeed(parser.nextDouble());
 
-        dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
         position.setTime(dateBuilder.getDate());
 
         position.set(Position.KEY_SATELLITES, parser.next());

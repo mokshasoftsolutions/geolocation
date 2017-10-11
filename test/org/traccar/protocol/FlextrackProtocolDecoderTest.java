@@ -11,10 +11,10 @@ public class FlextrackProtocolDecoderTest extends ProtocolTest {
 
         FlextrackProtocolDecoder decoder = new FlextrackProtocolDecoder(new FlextrackProtocol());
 
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "-1,LOGON,7000000123,8945000000"));
 
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "-1,LOGON,1080424008,8945020110126633198"));
 
         verifyPosition(decoder, text(

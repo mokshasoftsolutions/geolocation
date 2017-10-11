@@ -28,7 +28,7 @@ public class MeiligaoProtocol extends BaseProtocol {
 
     public MeiligaoProtocol() {
         super("meiligao");
-        setSupportedDataCommands(
+        setSupportedCommands(
                 Command.TYPE_POSITION_SINGLE,
                 Command.TYPE_POSITION_PERIODIC,
                 Command.TYPE_ENGINE_STOP,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2017 Anton Tananaev (anton@traccar.org)
+ * Copyright 2014 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,42 +93,24 @@ public class KhdProtocolDecoder extends BaseProtocolDecoder {
             position.setLongitude(BcdUtil.readCoordinate(buf));
             position.setSpeed(UnitsConverter.knotsFromKph(BcdUtil.readInteger(buf, 4)));
             position.setCourse(BcdUtil.readInteger(buf, 4));
-            position.setValid((buf.readUnsignedByte() & 0x80) != 0);
 
-            if (type != MSG_ALARM) {
+            int flags = buf.readUnsignedByte();
+            position.setValid((flags & 0x80) != 0);
+
+            if (type == MSG_ALARM) {
+
+                buf.skipBytes(2);
+
+            } else {
 
                 position.set(Position.KEY_ODOMETER, buf.readUnsignedMedium());
-                position.set(Position.KEY_STATUS, buf.readUnsignedInt());
-                position.set(Position.KEY_HDOP, buf.readUnsignedByte());
-                position.set(Position.KEY_VDOP, buf.readUnsignedByte());
-                position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
 
-                buf.skipBytes(5); // other location data
-
-                if (type == MSG_PERIPHERAL) {
-
-                    buf.readUnsignedShort(); // data length
-
-                    int dataType = buf.readUnsignedByte();
-
-                    buf.readUnsignedByte(); // content length
-
-                    switch (dataType) {
-                        case 0x01:
-                            position.set(Position.KEY_FUEL_LEVEL,
-                                    buf.readUnsignedByte() * 100 + buf.readUnsignedByte());
-                            break;
-                        case 0x02:
-                            position.set(Position.PREFIX_TEMP + 1,
-                                    buf.readUnsignedByte() * 100 + buf.readUnsignedByte());
-                            break;
-                        default:
-                            break;
-                    }
-
-                }
+                buf.skipBytes(4); // status
+                buf.skipBytes(8); // other
 
             }
+
+            // parse extra data
 
             return position;
 

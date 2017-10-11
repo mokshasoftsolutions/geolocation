@@ -8,20 +8,24 @@
 
     <entry key='web.enable'>true</entry>
     <entry key='web.port'>8082</entry>
-    <entry key='web.path'>./web</entry>
+    <entry key='web.path'>./traccar-web/web</entry>
 
- <entry key='geocoder.enable'>true</entry>
+    <entry key='geocoder.enable'>true</entry>
     <entry key='geocoder.type'>google</entry>
-  <entry key='geocoder.key'>AIzaSyC2t_MfonCMzVKUcIF854I4kX-_kExMJys</entry>
-  
-<!--<   <entry key='geocoder.enable'>true</entry>
-    <entry key='geocoder.type'>nominatim</entry>
-    <entry key='geocoder.url'>http://nominatim.openstreetmap.org/reverse</entry>-->
+
     <entry key='logger.enable'>true</entry>
     <entry key='logger.level'>all</entry>
     <entry key='logger.file'>./logs/tracker-server.log</entry>
 
     <entry key='event.enable'>true</entry>
+    <entry key='event.overspeedHandler'>true</entry>
+    <entry key='event.overspeed.notRepeat'>true</entry>
+    <entry key='event.motionHandler'>true</entry>
+    <entry key='event.geofenceHandler'>true</entry>
+    <entry key='event.alertHandler'>true</entry>
+    <entry key='event.ignitionHandler'>true</entry>
+    <entry key='event.statusHandler'>true</entry>
+    <entry key='event.maintenanceHandler'>true</entry>
 
     <!-- DATABASE CONFIG -->
 
@@ -37,7 +41,6 @@
         UPDATE server SET
         registration = :registration,
         readonly = :readonly,
-        deviceReadonly = :deviceReadonly,
         map = :map,
         bingKey = :bingKey,
         mapUrl = :mapUrl,
@@ -47,9 +50,6 @@
         longitude = :longitude,
         zoom = :zoom,
         twelveHourFormat = :twelveHourFormat,
-        coordinateFormat = :coordinateFormat,
-        forceSettings = :forceSettings,
-        timezone = :timezone,
         attributes = :attributes
         WHERE id = :id
     </entry>
@@ -64,15 +64,14 @@
     </entry>
 
     <entry key='database.insertUser'>
-        INSERT INTO users (name, email, phone, hashedPassword, salt, readonly, admin, map, distanceUnit, speedUnit, latitude, longitude, zoom, twelveHourFormat, coordinateFormat, disabled, expirationTime, deviceLimit, userLimit, deviceReadonly, token, timezone, attributes)
-        VALUES (:name, :email, :phone, :hashedPassword, :salt, :readonly, :admin, :map, :distanceUnit, :speedUnit, :latitude, :longitude, :zoom, :twelveHourFormat, :coordinateFormat, :disabled, :expirationTime, :deviceLimit, :userLimit, :deviceReadonly, :token, :timezone, :attributes)
+        INSERT INTO users (name, email, hashedPassword, salt, readonly, admin, map, distanceUnit, speedUnit, latitude, longitude, zoom, twelveHourFormat, coordinateFormat, disabled, expirationTime, deviceLimit, userLimit, token, attributes)
+        VALUES (:name, :email, :hashedPassword, :salt, :readonly, :admin, :map, :distanceUnit, :speedUnit, :latitude, :longitude, :zoom, :twelveHourFormat, :coordinateFormat, :disabled, :expirationTime, :deviceLimit, :userLimit, :token, :attributes)
     </entry>
 
     <entry key='database.updateUser'>
         UPDATE users SET
         name = :name,
         email = :email,
-        phone = :phone,
         readonly = :readonly,
         admin = :admin,
         map = :map,
@@ -87,9 +86,7 @@
         expirationTime = :expirationTime,
         deviceLimit = :deviceLimit,
         userLimit = :userLimit,
-        deviceReadonly = :deviceReadonly,
         token = :token,
-        timezone = :timezone,
         attributes = :attributes
         WHERE id = :id
     </entry>
@@ -186,7 +183,7 @@
     </entry>
 
     <entry key='database.selectLatestPositions'>
-        SELECT positions.* FROM positions INNER JOIN devices ON positions.id = devices.positionid;
+        SELECT * FROM positions WHERE id IN (SELECT positionId FROM devices)
     </entry>
 
     <entry key='database.updateLatestPosition'>
@@ -270,8 +267,8 @@
     </entry>
 
     <entry key='database.insertNotification'>
-        INSERT INTO notifications (userId, type, web, mail, sms, attributes)
-        VALUES (:userId, :type, :web, :mail, :sms, :attributes)
+        INSERT INTO notifications (userId, type, web, mail, attributes)
+        VALUES (:userId, :type, :web, :mail, :attributes)
     </entry>
 
     <entry key='database.updateNotification'>
@@ -280,7 +277,6 @@
         type = :type,
         web = :web,
         mail = :mail,
-        sms = :sms,
         attributes = :attributes
         WHERE id = :id
     </entry>
@@ -319,8 +315,8 @@
     </entry>
 
     <entry key='database.insertStatistics'>
-        INSERT INTO statistics (captureTime, activeUsers, activeDevices, requests, messagesReceived, messagesStored, mailSent, smsSent, geocoderRequests, geolocationRequests, attributes)
-        VALUES (:captureTime, :activeUsers, :activeDevices, :requests, :messagesReceived, :messagesStored, :mailSent, :smsSent, :geocoderRequests, :geolocationRequests, :attributes)
+        INSERT INTO statistics (captureTime, activeUsers, activeDevices, requests, messagesReceived, messagesStored, attributes)
+        VALUES (:captureTime, :activeUsers, :activeDevices, :requests, :messagesReceived, :messagesStored, :attributes)
     </entry>
     
     <entry key='database.selectCalendarsAll'>
@@ -373,8 +369,8 @@
     <entry key='gps103.port'>5001</entry>
     <entry key='tk103.port'>5002</entry>
     <entry key='gl100.port'>5003</entry>
-<!--    <entry key='gl200.port'>5004</entry>-->
-<!--    <entry key='t55.port'>5005</entry>-->
+	<!-- <entry key='gl200.port'>5004</entry> -->
+	<!--    <entry key='t55.port'>5005</entry>  -->
     <entry key='xexun.port'>5006</entry>
     <entry key='xexun.extended'>false</entry>
     <entry key='totem.port'>5007</entry>
@@ -470,7 +466,7 @@
     <entry key='disha.port'>5097</entry>
     <entry key='thinkrace.port'>5098</entry>
     <entry key='pathaway.port'>5099</entry>
-    <entry key='arnavi.port'>5100</entry>
+<!--    <entry key='arnavi.port'>5100</entry>-->
     <entry key='nvs.port'>5101</entry>
     <entry key='kenji.port'>5102</entry>
     <entry key='astra.port'>5103</entry>
@@ -502,12 +498,6 @@
     <entry key='maestro.port'>5129</entry>
     <entry key='ais.port'>5130</entry>
     <entry key='gt30.port'>5131</entry>
-    <entry key='tmg.port'>5132</entry>
-    <entry key='pretrace.port'>5133</entry>
-    <entry key='pricol.port'>5134</entry>
-    <entry key='siwi.port'>5135</entry>
-    <entry key='starlink.port'>5136</entry>
-    <entry key='dmt.port'>5137</entry>
-    <entry key='xt2400.port'>5138</entry>
 
 </properties>
+     

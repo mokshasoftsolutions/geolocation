@@ -19,7 +19,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -27,12 +26,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.traccar.BaseProtocol;
 import org.traccar.Config;
 import org.traccar.Context;
 import org.traccar.helper.Log;
-import org.traccar.model.Command;
-import org.traccar.model.CommandType;
 import org.traccar.model.Device;
 import org.traccar.model.DeviceTotalDistance;
 import org.traccar.model.Group;
@@ -50,7 +46,6 @@ public class DeviceManager implements IdentityManager {
 
     private Map<Long, Device> devicesById;
     private Map<String, Device> devicesByUniqueId;
-    private Map<String, Device> devicesByPhone;
     private AtomicLong devicesLastUpdate = new AtomicLong();
 
     private Map<Long, Group> groupsById;
@@ -58,14 +53,11 @@ public class DeviceManager implements IdentityManager {
 
     private final Map<Long, Position> positions = new ConcurrentHashMap<>();
 
-    private boolean fallbackToText;
-
     public DeviceManager(DataManager dataManager) {
         this.dataManager = dataManager;
         this.config = Context.getConfig();
         dataRefreshDelay = config.getLong("database.refreshDelay", DEFAULT_REFRESH_DELAY) * 1000;
         lookupGroupsAttribute = config.getBoolean("deviceManager.lookupGroupsAttribute");
-        fallbackToText = config.getBoolean("command.fallbackToSms");
         if (dataManager != null) {
             try {
                 updateGroupCache(true);
@@ -92,62 +84,45 @@ public class DeviceManager implements IdentityManager {
             if (devicesByUniqueId == null) {
                 devicesByUniqueId = new ConcurrentHashMap<>(databaseDevices.size());
             }
-            if (devicesByPhone == null) {
-                devicesByPhone = new ConcurrentHashMap<>(databaseDevices.size());
-            }
             Set<Long> databaseDevicesIds = new HashSet<>();
             Set<String> databaseDevicesUniqueIds = new HashSet<>();
-            Set<String> databaseDevicesPhones = new HashSet<>();
             for (Device device : databaseDevices) {
                 databaseDevicesIds.add(device.getId());
                 databaseDevicesUniqueIds.add(device.getUniqueId());
-                databaseDevicesPhones.add(device.getPhone());
                 if (devicesById.containsKey(device.getId())) {
                     Device cachedDevice = devicesById.get(device.getId());
                     cachedDevice.setName(device.getName());
                     cachedDevice.setGroupId(device.getGroupId());
-                    cachedDevice.setCategory(device.getCategory());
-                    cachedDevice.setContact(device.getContact());
-                    cachedDevice.setModel(device.getModel());
                     cachedDevice.setAttributes(device.getAttributes());
                     if (!device.getUniqueId().equals(cachedDevice.getUniqueId())) {
+                        devicesByUniqueId.remove(cachedDevice.getUniqueId());
                         devicesByUniqueId.put(device.getUniqueId(), cachedDevice);
                     }
                     cachedDevice.setUniqueId(device.getUniqueId());
-                    if (device.getPhone() != null && !device.getPhone().isEmpty()
-                            && !device.getPhone().equals(cachedDevice.getPhone())) {
-                        devicesByPhone.put(device.getPhone(), cachedDevice);
-                    }
-                    cachedDevice.setPhone(device.getPhone());
                 } else {
                     devicesById.put(device.getId(), device);
                     devicesByUniqueId.put(device.getUniqueId(), device);
-                    if (device.getPhone() != null && !device.getPhone().isEmpty()) {
-                        devicesByPhone.put(device.getPhone(), device);
-                    }
                     if (geofenceManager != null) {
                         Position lastPosition = getLastPosition(device.getId());
                         if (lastPosition != null) {
                             device.setGeofenceIds(geofenceManager.getCurrentDeviceGeofences(lastPosition));
                         }
                     }
+                    device.setStatus(Device.STATUS_OFFLINE);
                 }
             }
-            for (Iterator<Long> iterator = devicesById.keySet().iterator(); iterator.hasNext();) {
-                if (!databaseDevicesIds.contains(iterator.next())) {
-                    iterator.remove();
+            for (Long cachedDeviceId : devicesById.keySet()) {
+                if (!databaseDevicesIds.contains(cachedDeviceId)) {
+                    devicesById.remove(cachedDeviceId);
                 }
             }
-            for (Iterator<String> iterator = devicesByUniqueId.keySet().iterator(); iterator.hasNext();) {
-                if (!databaseDevicesUniqueIds.contains(iterator.next())) {
-                    iterator.remove();
+            for (String cachedDeviceUniqId : devicesByUniqueId.keySet()) {
+                if (!databaseDevicesUniqueIds.contains(cachedDeviceUniqId)) {
+                    devicesByUniqueId.remove(cachedDeviceUniqId);
                 }
             }
-            for (Iterator<String> iterator = devicesByPhone.keySet().iterator(); iterator.hasNext();) {
-                if (!databaseDevicesPhones.contains(iterator.next())) {
-                    iterator.remove();
-                }
-            }
+            databaseDevicesIds.clear();
+            databaseDevicesUniqueIds.clear();
         }
     }
 
@@ -163,10 +138,6 @@ public class DeviceManager implements IdentityManager {
         updateDeviceCache(forceUpdate);
 
         return devicesByUniqueId.get(uniqueId);
-    }
-
-    public Device getDeviceByPhone(String phone) {
-        return devicesByPhone.get(phone);
     }
 
     public Collection<Device> getAllDevices() {
@@ -203,9 +174,6 @@ public class DeviceManager implements IdentityManager {
 
         devicesById.put(device.getId(), device);
         devicesByUniqueId.put(device.getUniqueId(), device);
-        if (device.getPhone() != null  && !device.getPhone().isEmpty()) {
-            devicesByPhone.put(device.getPhone(), device);
-        }
     }
 
     public void updateDevice(Device device) throws SQLException {
@@ -213,9 +181,6 @@ public class DeviceManager implements IdentityManager {
 
         devicesById.put(device.getId(), device);
         devicesByUniqueId.put(device.getUniqueId(), device);
-        if (device.getPhone() != null && !device.getPhone().isEmpty()) {
-            devicesByPhone.put(device.getPhone(), device);
-        }
     }
 
     public void updateDeviceStatus(Device device) throws SQLException {
@@ -231,12 +196,8 @@ public class DeviceManager implements IdentityManager {
 
         if (devicesById.containsKey(deviceId)) {
             String deviceUniqueId = devicesById.get(deviceId).getUniqueId();
-            String phone = devicesById.get(deviceId).getPhone();
             devicesById.remove(deviceId);
             devicesByUniqueId.remove(deviceUniqueId);
-            if (phone != null && !phone.isEmpty()) {
-                devicesByPhone.remove(phone);
-            }
         }
         positions.remove(deviceId);
     }
@@ -458,49 +419,5 @@ public class DeviceManager implements IdentityManager {
         } else {
             throw new IllegalArgumentException();
         }
-    }
-
-    public void sendCommand(Command command) throws Exception {
-        long deviceId = command.getDeviceId();
-        if (command.getTextChannel()) {
-            Position lastPosition = getLastPosition(deviceId);
-            if (lastPosition != null) {
-                BaseProtocol protocol = Context.getServerManager().getProtocol(lastPosition.getProtocol());
-                protocol.sendTextCommand(devicesById.get(deviceId).getPhone(), command);
-            } else if (command.getType().equals(Command.TYPE_CUSTOM)) {
-                Context.getSmppManager().sendMessageSync(devicesById.get(deviceId).getPhone(),
-                        command.getString(Command.KEY_DATA), true);
-            } else {
-                throw new RuntimeException("Command " + command.getType() + " is not supported");
-            }
-        } else {
-            ActiveDevice activeDevice = Context.getConnectionManager().getActiveDevice(deviceId);
-            if (activeDevice != null) {
-                activeDevice.sendCommand(command);
-            } else {
-                if (fallbackToText) {
-                    command.setTextChannel(true);
-                    sendCommand(command);
-                } else {
-                    throw new RuntimeException("Device is not online");
-                }
-            }
-        }
-    }
-
-    public Collection<CommandType> getCommandTypes(long deviceId, boolean textChannel) {
-        List<CommandType> result = new ArrayList<>();
-        Position lastPosition = Context.getDeviceManager().getLastPosition(deviceId);
-        if (lastPosition != null) {
-            BaseProtocol protocol = Context.getServerManager().getProtocol(lastPosition.getProtocol());
-            Collection<String> commands;
-            commands = textChannel ? protocol.getSupportedTextCommands() : protocol.getSupportedDataCommands();
-            for (String commandKey : commands) {
-                result.add(new CommandType(commandKey));
-            }
-        } else {
-            result.add(new CommandType(Command.TYPE_CUSTOM));
-        }
-        return result;
     }
 }

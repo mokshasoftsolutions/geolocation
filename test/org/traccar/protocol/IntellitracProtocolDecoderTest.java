@@ -10,7 +10,7 @@ public class IntellitracProtocolDecoderTest extends ProtocolTest {
 
         IntellitracProtocolDecoder decoder = new IntellitracProtocolDecoder(new IntellitracProtocol());
 
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "$OK:TRACKING"));
         
         verifyPosition(decoder, text(

@@ -37,12 +37,12 @@ public class AutoGradeProtocolDecoder extends BaseProtocolDecoder {
             .text("(")
             .number("d{12}")                     // index
             .number("(d{15})")                   // imei
-            .number("(dd)(dd)(dd)")              // date (ddmmyy)
+            .number("(dd)(dd)(dd)")              // date
             .expression("([AV])")                // validity
             .number("(d+)(dd.d+)([NS])")         // latitude
             .number("(d+)(dd.d+)([EW])")         // longitude
             .number("([d.]{5})")                 // speed
-            .number("(dd)(dd)(dd)")              // time (hhmmss)
+            .number("(dd)(dd)(dd)")              // time
             .number("([d.]{6})")                 // course
             .expression("(.)")                   // status
             .number("A(xxxx)")
@@ -77,17 +77,17 @@ public class AutoGradeProtocolDecoder extends BaseProtocolDecoder {
         position.setDeviceId(deviceSession.getDeviceId());
 
         DateBuilder dateBuilder = new DateBuilder()
-                .setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+                .setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
 
         position.setValid(parser.next().equals("A"));
         position.setLatitude(parser.nextCoordinate());
         position.setLongitude(parser.nextCoordinate());
-        position.setSpeed(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
 
-        dateBuilder.setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        dateBuilder.setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
         position.setTime(dateBuilder.getDate());
 
-        position.setCourse(parser.nextDouble(0));
+        position.setCourse(parser.nextDouble());
 
         int status = parser.next().charAt(0);
         position.set(Position.KEY_STATUS, status);

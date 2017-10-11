@@ -38,8 +38,7 @@ Ext.define('Traccar.Application', {
         'AttributeAlias',
         'ReportSummary',
         'ReportTrip',
-        'Calendar',
-        'KnownAttribute'
+        'Calendar'
     ],
 
     stores: [
@@ -75,15 +74,7 @@ Ext.define('Traccar.Application', {
         'Statistics',
         'DeviceImages',
         'Calendars',
-        'AllCalendars',
-        'AllTimezones',
-        'VisibleDevices',
-        'DeviceStatuses',
-        'DeviceAttributes',
-        'GeofenceAttributes',
-        'GroupAttributes',
-        'ServerAttributes',
-        'UserAttributes'
+        'AllCalendars'
     ],
 
     controllers: [
@@ -160,15 +151,13 @@ Ext.define('Traccar.Application', {
         }
     },
 
-    showError: function (error) {
-        if (Ext.isString(error)) {
-            Ext.Msg.alert(Strings.errorTitle, error);
-        } else if (error.responseText) {
-            Ext.Msg.alert(Strings.errorTitle, Strings.errorGeneral +
-                    '<br><br><textarea readonly rows="5" style="resize: none; width: 100%;">' +
-                    error.responseText + '</textarea>');
-        } else if (error.statusText) {
-            Ext.Msg.alert(Strings.errorTitle, error.statusText);
+    showError: function (response) {
+        if (Ext.isString(response)) {
+            Ext.Msg.alert(Strings.errorTitle, response);
+        } else if (response.responseText) {
+            Ext.Msg.alert(Strings.errorTitle, response.responseText);
+        } else if (response.statusText) {
+            Ext.Msg.alert(Strings.errorTitle, response.statusText);
         } else {
             Ext.Msg.alert(Strings.errorTitle, Strings.errorConnection);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 - 2017 Anton Tananaev (anton@traccar.org)
+ * Copyright 2012 - 2016 Anton Tananaev (anton@traccar.org)
  * Copyright 2012 Luis Parada (luis.parada@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,15 +41,15 @@ public class Pt502ProtocolDecoder extends BaseProtocolDecoder {
             .any().text("$")
             .expression("([^,]+),")              // type
             .number("(d+),")                     // id
-            .number("(dd)(dd)(dd).(ddd),")       // time (hhmmss.sss)
+            .number("(dd)(dd)(dd).(ddd),")       // time
             .expression("([AV]),")               // validity
-            .number("(d+)(dd.dddd),")            // latitude
+            .number("(dd)(dd.dddd),")            // latitude
             .expression("([NS]),")
-            .number("(d+)(dd.dddd),")            // longitude
+            .number("(ddd)(dd.dddd),")           // longitude
             .expression("([EW]),")
             .number("(d+.d+)?,")                 // speed
             .number("(d+.d+)?,")                 // course
-            .number("(dd)(dd)(dd),,,")           // date (ddmmyy)
+            .number("(dd)(dd)(dd),,,")           // date
             .expression("./")
             .expression("([01])+,")              // input
             .expression("([01])+/")              // output
@@ -65,7 +65,7 @@ public class Pt502ProtocolDecoder extends BaseProtocolDecoder {
             case "TOW":
                 return Position.ALARM_TOW;
             case "HDA":
-                return Position.ALARM_ACCELERATION;
+                return Position.ALARM_ACCELETATION;
             case "HDB":
                 return Position.ALARM_BREAKING;
             case "FDA":
@@ -83,7 +83,9 @@ public class Pt502ProtocolDecoder extends BaseProtocolDecoder {
     protected Object decode(
             Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-        Parser parser = new Parser(PATTERN, (String) msg);
+        String sentence = (String) msg;
+
+        Parser parser = new Parser(PATTERN, sentence);
         if (!parser.matches()) {
             return null;
         }
@@ -107,15 +109,15 @@ public class Pt502ProtocolDecoder extends BaseProtocolDecoder {
         position.setDeviceId(deviceSession.getDeviceId());
 
         DateBuilder dateBuilder = new DateBuilder()
-                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt(), parser.nextInt());
 
         position.setValid(parser.next().equals("A"));
         position.setLatitude(parser.nextCoordinate());
         position.setLongitude(parser.nextCoordinate());
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
-        dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
         position.setTime(dateBuilder.getDate());
 
         position.set(Position.KEY_INPUT, parser.next());
@@ -128,11 +130,11 @@ public class Pt502ProtocolDecoder extends BaseProtocolDecoder {
             }
         }
 
-        position.set(Position.KEY_ODOMETER, parser.nextInt(0));
+        position.set(Position.KEY_ODOMETER, parser.nextInt());
         position.set(Position.KEY_RFID, parser.next());
 
         if (parser.hasNext()) {
-            int value = parser.nextHexInt(0);
+            int value = parser.nextInt(16);
             position.set(Position.KEY_BATTERY, value >> 8);
             position.set(Position.KEY_RSSI, (value >> 4) & 0xf);
             position.set(Position.KEY_SATELLITES, value & 0xf);

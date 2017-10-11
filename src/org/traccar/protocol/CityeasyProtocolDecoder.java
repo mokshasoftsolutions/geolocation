@@ -21,6 +21,7 @@ import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
 import org.traccar.helper.Checksum;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.model.CellTower;
@@ -39,8 +40,8 @@ public class CityeasyProtocolDecoder extends BaseProtocolDecoder {
 
     private static final Pattern PATTERN = new PatternBuilder()
             .groupBegin()
-            .number("(dddd)(dd)(dd)")            // date (yyyymmdd)
-            .number("(dd)(dd)(dd),")             // time (hhmmss)
+            .number("(dddd)(dd)(dd)")            // date
+            .number("(dd)(dd)(dd),")             // time
             .number("([AV]),")                   // validity
             .number("(d+),")                     // satellites
             .number("([NS]),(d+.d+),")           // latitude
@@ -97,7 +98,10 @@ public class CityeasyProtocolDecoder extends BaseProtocolDecoder {
 
             if (parser.hasNext(15)) {
 
-                position.setTime(parser.nextDateTime());
+                DateBuilder dateBuilder = new DateBuilder()
+                        .setDate(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                        .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+                position.setTime(dateBuilder.getDate());
 
                 position.setValid(parser.next().equals("A"));
                 position.set(Position.KEY_SATELLITES, parser.next());
@@ -105,9 +109,9 @@ public class CityeasyProtocolDecoder extends BaseProtocolDecoder {
                 position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG));
                 position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG));
 
-                position.setSpeed(parser.nextDouble(0));
-                position.set(Position.KEY_HDOP, parser.nextDouble(0));
-                position.setAltitude(parser.nextDouble(0));
+                position.setSpeed(parser.nextDouble());
+                position.set(Position.KEY_HDOP, parser.nextDouble());
+                position.setAltitude(parser.nextDouble());
 
             } else {
 
@@ -116,7 +120,7 @@ public class CityeasyProtocolDecoder extends BaseProtocolDecoder {
             }
 
             position.setNetwork(new Network(CellTower.from(
-                    parser.nextInt(0), parser.nextInt(0), parser.nextInt(0), parser.nextInt(0))));
+                    parser.nextInt(), parser.nextInt(), parser.nextInt(), parser.nextInt())));
 
             return position;
         }

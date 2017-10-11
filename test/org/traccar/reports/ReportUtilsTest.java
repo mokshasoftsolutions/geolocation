@@ -22,10 +22,15 @@ public class ReportUtilsTest {
     public void testCalculateSpentFuel() {
         Position startPosition = new Position();
         Position endPosition = new Position();
-        Assert.assertNull(ReportUtils.calculateFuel(startPosition, endPosition));
-        startPosition.set(Position.KEY_FUEL_LEVEL, 0.7);
-        endPosition.set(Position.KEY_FUEL_LEVEL, 0.5);
-        Assert.assertEquals(ReportUtils.calculateFuel(startPosition, endPosition), "0.2");
+        Assert.assertEquals(ReportUtils.calculateFuel(startPosition, endPosition), "-");
+        startPosition.setProtocol("meitrack");
+        startPosition.set(Position.KEY_FUEL, 0.07);
+        endPosition.set(Position.KEY_FUEL, 0.05);
+        Assert.assertEquals(ReportUtils.calculateFuel(startPosition, endPosition), "0.02 %");
+        startPosition.setProtocol("galileo");
+        Assert.assertEquals(ReportUtils.calculateFuel(startPosition, endPosition), "0.02 %");
+        startPosition.setProtocol("noran");
+        Assert.assertEquals(ReportUtils.calculateFuel(startPosition, endPosition), "0.02 %");
     }
 
 }

@@ -109,7 +109,8 @@ public class FilterHandler extends BaseDataHandler {
     }
 
     private boolean filterApproximate(Position position) {
-        return filterApproximate && position.getBoolean(Position.KEY_APPROXIMATE);
+        Boolean approximate = position.getBoolean(Position.KEY_APPROXIMATE);
+        return filterApproximate && approximate != null && approximate;
     }
 
     private boolean filterStatic(Position position) {

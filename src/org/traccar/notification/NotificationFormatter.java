@@ -1,6 +1,5 @@
 /*
- * Copyright 2016 - 2017 Anton Tananaev (anton@traccar.org)
- * Copyright 2017 Andrey Kunitsyn (andrey@traccar.org)
+ * Copyright 2016 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +17,10 @@ package org.traccar.notification;
 
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.exception.ResourceNotFoundException;
-import org.apache.velocity.tools.generic.DateTool;
-import org.apache.velocity.tools.generic.NumberTool;
 import org.traccar.Context;
 import org.traccar.helper.Log;
 import org.traccar.model.Device;
@@ -37,7 +33,7 @@ public final class NotificationFormatter {
     private NotificationFormatter() {
     }
 
-    public static VelocityContext prepareContext(long userId, Event event, Position position) {
+    public static MailMessage formatMessage(long userId, Event event, Position position) {
         Device device = Context.getIdentityManager().getDeviceById(event.getDeviceId());
 
         VelocityContext velocityContext = new VelocityContext();
@@ -51,39 +47,18 @@ public final class NotificationFormatter {
             velocityContext.put("geofence", Context.getGeofenceManager().getGeofence(event.getGeofenceId()));
         }
         velocityContext.put("webUrl", Context.getVelocityEngine().getProperty("web.url"));
-        velocityContext.put("dateTool", new DateTool());
-        velocityContext.put("numberTool", new NumberTool());
-        velocityContext.put("timezone", ReportUtils.getTimezone(userId));
-        velocityContext.put("locale", Locale.getDefault());
-        return velocityContext;
-    }
 
-    public static Template getTemplate(Event event, String path) {
-        Template template;
+        Template template = null;
         try {
-            template = Context.getVelocityEngine().getTemplate(path + event.getType() + ".vm",
-                    StandardCharsets.UTF_8.name());
+            template = Context.getVelocityEngine().getTemplate(event.getType() + ".vm", StandardCharsets.UTF_8.name());
         } catch (ResourceNotFoundException error) {
             Log.warning(error);
-            template = Context.getVelocityEngine().getTemplate(path + "unknown.vm",
-                    StandardCharsets.UTF_8.name());
+            template = Context.getVelocityEngine().getTemplate("unknown.vm", StandardCharsets.UTF_8.name());
         }
-        return template;
-    }
 
-    public static MailMessage formatMailMessage(long userId, Event event, Position position) {
-        VelocityContext velocityContext = prepareContext(userId, event, position);
         StringWriter writer = new StringWriter();
-        getTemplate(event, Context.getConfig().getString("mail.templatesPath", "mail") + "/")
-                .merge(velocityContext, writer);
-        return new MailMessage((String) velocityContext.get("subject"), writer.toString());
-    }
-
-    public static String formatSmsMessage(long userId, Event event, Position position) {
-        VelocityContext velocityContext = prepareContext(userId, event, position);
-        StringWriter writer = new StringWriter();
-        getTemplate(event, Context.getConfig().getString("sms.templatesPath", "sms") + "/")
-                .merge(velocityContext, writer);
-        return writer.toString();
+        template.merge(velocityContext, writer);
+        String subject = (String) velocityContext.get("subject");
+        return new MailMessage(subject, writer.toString());
     }
 }

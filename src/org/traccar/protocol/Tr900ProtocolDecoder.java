@@ -18,6 +18,7 @@ package org.traccar.protocol;
 import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.model.Position;
@@ -36,7 +37,7 @@ public class Tr900ProtocolDecoder extends BaseProtocolDecoder {
             .number("d+,")                       // period
             .number("(d),")                      // fix
             .number("(dd)(dd)(dd),")             // date (yymmdd)
-            .number("(dd)(dd)(dd),")             // time (hhmmss)
+            .number("(dd)(dd)(dd),")             // time
             .expression("([EW])")
             .number("(ddd)(dd.d+),")             // longitude
             .expression("([NS])")
@@ -72,19 +73,22 @@ public class Tr900ProtocolDecoder extends BaseProtocolDecoder {
         }
         position.setDeviceId(deviceSession.getDeviceId());
 
-        position.setValid(parser.nextInt(0) == 1);
+        position.setValid(parser.nextInt() == 1);
 
-        position.setTime(parser.nextDateTime());
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDate(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
         position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
         position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG_MIN));
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
         position.set(Position.KEY_RSSI, parser.next());
-        position.set(Position.KEY_EVENT, parser.nextInt(0));
-        position.set(Position.PREFIX_ADC + 1, parser.nextInt(0));
-        position.set(Position.KEY_BATTERY, parser.nextInt(0));
+        position.set(Position.KEY_EVENT, parser.nextInt());
+        position.set(Position.PREFIX_ADC + 1, parser.nextInt());
+        position.set(Position.KEY_BATTERY, parser.nextInt());
         position.set(Position.KEY_INPUT, parser.next());
         position.set(Position.KEY_STATUS, parser.next());
 

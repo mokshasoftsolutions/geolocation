@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2017 Anton Tananaev (anton@traccar.org)
+ * Copyright 2016 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import org.traccar.model.Event;
 import org.traccar.model.Notification;
 import org.traccar.model.Position;
 import org.traccar.notification.NotificationMail;
-import org.traccar.notification.NotificationSms;
 
 public class NotificationManager {
 
@@ -65,9 +64,6 @@ public class NotificationManager {
                     }
                     if (notification.getMail()) {
                         NotificationMail.sendMailAsync(userId, event, position);
-                    }
-                    if (notification.getSms()) {
-                        NotificationSms.sendSmsAsync(userId, event, position);
                     }
                 }
             }
@@ -135,9 +131,8 @@ public class NotificationManager {
         Notification cachedNotification = getUserNotificationByType(notification.getUserId(), notification.getType());
         if (cachedNotification != null) {
             if (cachedNotification.getWeb() != notification.getWeb()
-                    || cachedNotification.getMail() != notification.getMail()
-                    || cachedNotification.getSms() != notification.getSms()) {
-                if (!notification.getWeb() && !notification.getMail() && !notification.getSms()) {
+                    || cachedNotification.getMail() != notification.getMail()) {
+                if (!notification.getWeb() && !notification.getMail()) {
                     try {
                         dataManager.removeNotification(cachedNotification);
                     } catch (SQLException error) {
@@ -154,7 +149,6 @@ public class NotificationManager {
                     try {
                         cachedNotification.setWeb(notification.getWeb());
                         cachedNotification.setMail(notification.getMail());
-                        cachedNotification.setSms(notification.getSms());
                         cachedNotification.setAttributes(notification.getAttributes());
                     } finally {
                         notificationsLock.writeLock().unlock();
@@ -168,7 +162,7 @@ public class NotificationManager {
             } else {
                 notification.setId(cachedNotification.getId());
             }
-        } else if (notification.getWeb() || notification.getMail() || notification.getSms()) {
+        } else if (notification.getWeb() || notification.getMail()) {
             try {
                 dataManager.addNotification(notification);
             } catch (SQLException error) {

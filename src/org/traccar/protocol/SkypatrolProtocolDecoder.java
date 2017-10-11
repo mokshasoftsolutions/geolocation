@@ -92,15 +92,15 @@ public class SkypatrolProtocolDecoder extends BaseProtocolDecoder {
             position.setDeviceId(deviceSession.getDeviceId());
 
             if (BitUtil.check(mask, 3)) {
-                position.set(Position.PREFIX_IO + 1, buf.readUnsignedShort());
+                buf.readUnsignedShort(); // io data
             }
 
             if (BitUtil.check(mask, 4)) {
-                position.set(Position.PREFIX_ADC + 1, buf.readUnsignedShort());
+                buf.readUnsignedShort(); // adc 1
             }
 
             if (BitUtil.check(mask, 5)) {
-                position.set(Position.PREFIX_ADC + 2, buf.readUnsignedShort());
+                buf.readUnsignedShort(); // adc 2
             }
 
             if (BitUtil.check(mask, 7)) {
@@ -150,11 +150,11 @@ public class SkypatrolProtocolDecoder extends BaseProtocolDecoder {
             }
 
             if (BitUtil.check(mask, 17)) {
-                position.set(Position.KEY_BATTERY, buf.readUnsignedShort());
+                buf.readUnsignedShort(); // battery percentage
             }
 
             if (BitUtil.check(mask, 20)) {
-                position.set(Position.KEY_ODOMETER_TRIP, buf.readUnsignedInt());
+                position.set("trip", buf.readUnsignedInt());
             }
 
             if (BitUtil.check(mask, 21)) {
@@ -166,7 +166,7 @@ public class SkypatrolProtocolDecoder extends BaseProtocolDecoder {
             }
 
             if (BitUtil.check(mask, 24)) {
-                position.set(Position.KEY_POWER, buf.readUnsignedShort() * 0.001);
+                position.set(Position.KEY_POWER, buf.readUnsignedShort() / 1000.0);
             }
 
             if (BitUtil.check(mask, 25)) {

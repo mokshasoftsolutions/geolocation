@@ -10,7 +10,7 @@ public class TrackboxProtocolDecoderTest extends ProtocolTest {
 
         TrackboxProtocolDecoder decoder = new TrackboxProtocolDecoder(new TrackboxProtocol());
 
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "a=connect&v=11&i=111111111111111"));
 
         verifyPosition(decoder, text(

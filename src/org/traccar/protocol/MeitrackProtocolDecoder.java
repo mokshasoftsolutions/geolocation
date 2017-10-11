@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 - 2017 Anton Tananaev (anton@traccar.org)
+ * Copyright 2012 - 2016 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.Context;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.helper.UnitsConverter;
@@ -49,11 +50,11 @@ public class MeitrackProtocolDecoder extends BaseProtocolDecoder {
             .number("(d+),")                     // event
             .number("(-?d+.d+),")                // latitude
             .number("(-?d+.d+),")                // longitude
-            .number("(dd)(dd)(dd)")              // date (yymmdd)
-            .number("(dd)(dd)(dd),")             // time (hhmmss)
+            .number("(dd)(dd)(dd)")              // date (ddmmyy)
+            .number("(dd)(dd)(dd),")             // time
             .number("([AV]),")                   // validity
             .number("(d+),")                     // satellites
-            .number("(d+),")                     // rssi
+            .number("(d+),")                     // gsm signal
             .number("(d+.?d*),")                 // speed
             .number("(d+),")                     // course
             .number("(d+.?d*),")                 // hdop
@@ -63,7 +64,7 @@ public class MeitrackProtocolDecoder extends BaseProtocolDecoder {
             .number("(d+)|")                     // mcc
             .number("(d+)|")                     // mnc
             .number("(x+)|")                     // lac
-            .number("(x+),")                     // cid
+            .number("(x+),")                     // cell
             .number("(x+),")                     // state
             .number("(x+)?|")                    // adc1
             .number("(x+)?|")                    // adc2
@@ -84,31 +85,6 @@ public class MeitrackProtocolDecoder extends BaseProtocolDecoder {
             .text("\r\n").optional()
             .compile();
 
-    private String decodeAlarm(int event) {
-        switch (event) {
-            case 1:
-                return Position.ALARM_SOS;
-            case 17:
-                return Position.ALARM_LOW_BATTERY;
-            case 18:
-                return Position.ALARM_LOW_POWER;
-            case 19:
-                return Position.ALARM_OVERSPEED;
-            case 20:
-                return Position.ALARM_GEOFENCE_ENTER;
-            case 21:
-                return Position.ALARM_GEOFENCE_EXIT;
-            case 22:
-                return Position.ALARM_POWER_RESTORED;
-            case 23:
-                return Position.ALARM_POWER_CUT;
-            case 36:
-                return Position.ALARM_TOW;
-            default:
-                return null;
-        }
-    }
-
     private Position decodeRegularMessage(Channel channel, SocketAddress remoteAddress, ChannelBuffer buf) {
 
         Parser parser = new Parser(PATTERN, buf.toString(StandardCharsets.US_ASCII));
@@ -125,77 +101,45 @@ public class MeitrackProtocolDecoder extends BaseProtocolDecoder {
         }
         position.setDeviceId(deviceSession.getDeviceId());
 
-        int event = parser.nextInt(0);
+        int event = parser.nextInt();
         position.set(Position.KEY_EVENT, event);
-        position.set(Position.KEY_ALARM, decodeAlarm(event));
 
-        position.setLatitude(parser.nextDouble(0));
-        position.setLongitude(parser.nextDouble(0));
+        position.setLatitude(parser.nextDouble());
+        position.setLongitude(parser.nextDouble());
 
-        position.setTime(parser.nextDateTime());
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDate(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
         position.setValid(parser.next().equals("A"));
 
         position.set(Position.KEY_SATELLITES, parser.next());
-        int rssi = parser.nextInt(0);
+        position.set(Position.KEY_RSSI, parser.next());
 
-        position.setSpeed(UnitsConverter.knotsFromKph(parser.nextDouble(0)));
-        position.setCourse(parser.nextDouble(0));
+        position.setSpeed(UnitsConverter.knotsFromKph(parser.nextDouble()));
+        position.setCourse(parser.nextDouble());
 
         position.set(Position.KEY_HDOP, parser.next());
 
-        position.setAltitude(parser.nextDouble(0));
+        position.setAltitude(parser.nextDouble());
 
-        position.set(Position.KEY_ODOMETER, parser.nextInt(0));
+        position.set(Position.KEY_ODOMETER, parser.next());
         position.set("runtime", parser.next());
 
-        position.setNetwork(new Network(CellTower.from(
-                parser.nextInt(0), parser.nextInt(0), parser.nextHexInt(0), parser.nextHexInt(0), rssi)));
+        position.setNetwork(new Network(
+                CellTower.from(parser.nextInt(), parser.nextInt(), parser.nextInt(16), parser.nextInt(16))));
 
         position.set(Position.KEY_STATUS, parser.next());
 
         for (int i = 1; i <= 3; i++) {
             if (parser.hasNext()) {
-                position.set(Position.PREFIX_ADC + i, parser.nextHexInt(0));
+                position.set(Position.PREFIX_ADC + i, parser.nextInt(16));
             }
         }
 
-        String deviceModel = Context.getIdentityManager().getDeviceById(deviceSession.getDeviceId()).getModel();
-        if (deviceModel == null) {
-            deviceModel = "";
-        }
-        switch (deviceModel.toUpperCase()) {
-            case "MVT340":
-            case "MVT380":
-                position.set(Position.KEY_BATTERY, parser.nextHexInt(0) * 3.0 * 2.0 / 1024.0);
-                position.set(Position.KEY_POWER, parser.nextHexInt(0) * 3.0 * 16.0 / 1024.0);
-                break;
-            case "MT90":
-                position.set(Position.KEY_BATTERY, parser.nextHexInt(0) * 3.3 * 2.0 / 4096.0);
-                position.set(Position.KEY_POWER, parser.nextHexInt(0));
-                break;
-            case "T1":
-            case "T3":
-            case "MVT100":
-            case "MVT600":
-            case "MVT800":
-            case "TC68":
-            case "TC68S":
-                position.set(Position.KEY_BATTERY, parser.nextHexInt(0) * 3.3 * 2.0 / 4096.0);
-                position.set(Position.KEY_POWER, parser.nextHexInt(0) * 3.3 * 16.0 / 4096.0);
-                break;
-            case "T311":
-            case "T322X":
-            case "T333":
-            case "T355":
-                position.set(Position.KEY_BATTERY, parser.nextHexInt(0) / 100.0);
-                position.set(Position.KEY_POWER, parser.nextHexInt(0) / 100.0);
-                break;
-            default:
-                position.set(Position.KEY_BATTERY, parser.nextHexInt(0));
-                position.set(Position.KEY_POWER, parser.nextHexInt(0));
-                break;
-        }
+        position.set(Position.KEY_BATTERY, parser.nextInt(16));
+        position.set(Position.KEY_POWER, parser.nextInt(16));
 
         String eventData = parser.next();
         if (eventData != null && !eventData.isEmpty()) {
@@ -211,7 +155,7 @@ public class MeitrackProtocolDecoder extends BaseProtocolDecoder {
 
         if (parser.hasNext()) {
             String fuel = parser.next();
-            position.set(Position.KEY_FUEL_LEVEL,
+            position.set(Position.KEY_FUEL,
                     Integer.parseInt(fuel.substring(0, 2), 16) + Integer.parseInt(fuel.substring(2), 16) * 0.01);
         }
 
@@ -256,7 +200,7 @@ public class MeitrackProtocolDecoder extends BaseProtocolDecoder {
             position.setValid(buf.readUnsignedByte() == 1);
 
             position.set(Position.KEY_SATELLITES, buf.readUnsignedByte());
-            int rssi = buf.readUnsignedByte();
+            position.set(Position.KEY_RSSI, buf.readUnsignedByte());
 
             position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedShort()));
             position.setCourse(buf.readUnsignedShort());
@@ -270,8 +214,7 @@ public class MeitrackProtocolDecoder extends BaseProtocolDecoder {
 
             position.setNetwork(new Network(CellTower.from(
                     buf.readUnsignedShort(), buf.readUnsignedShort(),
-                    buf.readUnsignedShort(), buf.readUnsignedShort(),
-                    rssi)));
+                    buf.readUnsignedShort(), buf.readUnsignedShort())));
 
             position.set(Position.KEY_STATUS, buf.readUnsignedShort());
 

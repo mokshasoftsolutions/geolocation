@@ -15,10 +15,10 @@
  */
 package org.traccar.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.traccar.Context;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 public class CellTower {
 
     public static CellTower from(int mcc, int mnc, int lac, long cid) {
@@ -71,7 +71,7 @@ public class CellTower {
     public Integer getLocationAreaCode() {
         return locationAreaCode;
     }
- m  
+
     public void setLocationAreaCode(Integer locationAreaCode) {
         this.locationAreaCode = locationAreaCode;
     }

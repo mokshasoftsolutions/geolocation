@@ -19,6 +19,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.helper.UnitsConverter;
@@ -38,8 +39,8 @@ public class WondexProtocolDecoder extends BaseProtocolDecoder {
     private static final Pattern PATTERN = new PatternBuilder()
             .number("[^d]*")                     // deader
             .number("(d+),")                     // device identifier
-            .number("(dddd)(dd)(dd)")            // date (yyyymmdd)
-            .number("(dd)(dd)(dd),")             // time (hhmmss)
+            .number("(dddd)(dd)(dd)")            // date
+            .number("(dd)(dd)(dd),")             // time
             .number("(-?d+.d+),")                // longitude
             .number("(-?d+.d+),")                // latitude
             .number("(d+),")                     // speed
@@ -97,22 +98,25 @@ public class WondexProtocolDecoder extends BaseProtocolDecoder {
             }
             position.setDeviceId(deviceSession.getDeviceId());
 
-            position.setTime(parser.nextDateTime());
+            DateBuilder dateBuilder = new DateBuilder()
+                    .setDate(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                    .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+            position.setTime(dateBuilder.getDate());
 
-            position.setLongitude(parser.nextDouble(0));
-            position.setLatitude(parser.nextDouble(0));
-            position.setSpeed(UnitsConverter.knotsFromKph(parser.nextDouble(0)));
-            position.setCourse(parser.nextDouble(0));
-            position.setAltitude(parser.nextDouble(0));
+            position.setLongitude(parser.nextDouble());
+            position.setLatitude(parser.nextDouble());
+            position.setSpeed(UnitsConverter.knotsFromKph(parser.nextDouble()));
+            position.setCourse(parser.nextDouble());
+            position.setAltitude(parser.nextDouble());
 
-            int satellites = parser.nextInt(0);
+            int satellites = parser.nextInt();
             position.setValid(satellites >= 3);
             position.set(Position.KEY_SATELLITES, satellites);
 
             position.set(Position.KEY_EVENT, parser.next());
             position.set(Position.KEY_BATTERY, parser.next());
             if (parser.hasNext()) {
-                position.set(Position.KEY_ODOMETER, parser.nextDouble(0) * 1000);
+                position.set(Position.KEY_ODOMETER, parser.nextDouble() * 1000);
             }
             position.set(Position.KEY_INPUT, parser.next());
             position.set(Position.PREFIX_ADC + 1, parser.next());

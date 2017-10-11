@@ -35,7 +35,7 @@ public class CarscopProtocolDecoder extends BaseProtocolDecoder {
     private static final Pattern PATTERN = new PatternBuilder()
             .text("*")
             .any()
-            .number("(dd)(dd)(dd)")              // time (hhmmss)
+            .number("(dd)(dd)(dd)")              // time
             .expression("([AV])")                // validity
             .number("(dd)(dd.dddd)")             // latitude
             .expression("([NS])")
@@ -76,20 +76,20 @@ public class CarscopProtocolDecoder extends BaseProtocolDecoder {
         position.setProtocol(getProtocolName());
 
         DateBuilder dateBuilder = new DateBuilder()
-                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
 
         position.setValid(parser.next().equals("A"));
         position.setLatitude(parser.nextCoordinate());
         position.setLongitude(parser.nextCoordinate());
-        position.setSpeed(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
 
-        dateBuilder.setDate(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        dateBuilder.setDate(parser.nextInt(), parser.nextInt(), parser.nextInt());
         position.setTime(dateBuilder.getDate());
 
-        position.setCourse(parser.nextDouble(0));
+        position.setCourse(parser.nextDouble());
 
         position.set(Position.KEY_STATUS, parser.next());
-        position.set(Position.KEY_ODOMETER, parser.nextInt(0));
+        position.set(Position.KEY_ODOMETER, parser.nextInt());
 
         return position;
     }

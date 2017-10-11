@@ -18,6 +18,7 @@ package org.traccar.protocol;
 import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.model.Position;
@@ -34,8 +35,8 @@ public class IntellitracProtocolDecoder extends BaseProtocolDecoder {
     private static final Pattern PATTERN = new PatternBuilder()
             .expression(".+,").optional()
             .number("(d+),")                     // identifier
-            .number("(dddd)(dd)(dd)")            // date (yyyymmdd)
-            .number("(dd)(dd)(dd),")             // time (hhmmss)
+            .number("(dddd)(dd)(dd)")            // date
+            .number("(dd)(dd)(dd),")             // time
             .number("(-?d+.d+),")                // longitude
             .number("(-?d+.d+),")                // latitude
             .number("(d+.?d*),")                 // speed
@@ -81,36 +82,39 @@ public class IntellitracProtocolDecoder extends BaseProtocolDecoder {
         }
         position.setDeviceId(deviceSession.getDeviceId());
 
-        position.setTime(parser.nextDateTime());
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDate(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
-        position.setLongitude(parser.nextDouble(0));
-        position.setLatitude(parser.nextDouble(0));
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
-        position.setAltitude(parser.nextDouble(0));
+        position.setLongitude(parser.nextDouble());
+        position.setLatitude(parser.nextDouble());
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
+        position.setAltitude(parser.nextDouble());
 
-        int satellites = parser.nextInt(0);
+        int satellites = parser.nextInt();
         position.setValid(satellites >= 3);
         position.set(Position.KEY_SATELLITES, satellites);
 
-        position.set(Position.KEY_INDEX, parser.nextLong(0));
-        position.set(Position.KEY_INPUT, parser.nextInt(0));
-        position.set(Position.KEY_OUTPUT, parser.nextInt(0));
+        position.set(Position.KEY_INDEX, parser.nextLong());
+        position.set(Position.KEY_INPUT, parser.next());
+        position.set(Position.KEY_OUTPUT, parser.next());
 
-        position.set(Position.PREFIX_ADC + 1, parser.nextDouble(0));
-        position.set(Position.PREFIX_ADC + 2, parser.nextDouble(0));
+        position.set(Position.PREFIX_ADC + 1, parser.next());
+        position.set(Position.PREFIX_ADC + 2, parser.next());
 
         // J1939 data
-        position.set(Position.KEY_OBD_SPEED, parser.nextInt(0));
-        position.set(Position.KEY_RPM, parser.nextInt(0));
-        position.set("coolant", parser.nextInt(0));
-        position.set(Position.KEY_FUEL_LEVEL, parser.nextInt(0));
-        position.set(Position.KEY_FUEL_CONSUMPTION, parser.nextInt(0));
-        position.set(Position.PREFIX_TEMP + 1, parser.nextInt(0));
-        position.set(Position.KEY_CHARGE, parser.nextInt(0));
-        position.set("tpl", parser.nextInt(0));
-        position.set("axle", parser.nextInt(0));
-        position.set(Position.KEY_OBD_ODOMETER, parser.nextInt(0));
+        position.set(Position.KEY_OBD_SPEED, parser.next());
+        position.set(Position.KEY_RPM, parser.next());
+        position.set("coolant", parser.next());
+        position.set(Position.KEY_FUEL, parser.next());
+        position.set(Position.KEY_FUEL_CONSUMPTION, parser.next());
+        position.set(Position.PREFIX_TEMP + 1, parser.next());
+        position.set(Position.KEY_CHARGE, parser.next());
+        position.set("tpl", parser.next());
+        position.set("axle", parser.next());
+        position.set(Position.KEY_OBD_ODOMETER, parser.next());
 
         return position;
     }

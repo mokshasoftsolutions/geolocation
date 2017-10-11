@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 - 2017 Anton Tananaev (anton@traccar.org)
+ * Copyright 2013 - 2016 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.traccar.protocol;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.socket.DatagramChannel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
 import org.traccar.helper.BitUtil;
@@ -39,7 +38,7 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
         super(protocol);
     }
 
-    private DeviceSession parseIdentification(Channel channel, SocketAddress remoteAddress, ChannelBuffer buf) {
+    private void parseIdentification(Channel channel, SocketAddress remoteAddress, ChannelBuffer buf) {
 
         int length = buf.readUnsignedShort();
         String imei = buf.toString(buf.readerIndex(), length, StandardCharsets.US_ASCII);
@@ -54,7 +53,6 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
             }
             channel.write(response);
         }
-        return deviceSession;
     }
 
     public static final int CODEC_GH3000 = 0x07;
@@ -67,60 +65,32 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
 
         position.set(Position.KEY_TYPE, buf.readUnsignedByte());
 
-        position.set(Position.KEY_COMMAND, buf.readBytes(buf.readInt()).toString(StandardCharsets.US_ASCII));
+        position.set("command", buf.readBytes(buf.readInt()).toString(StandardCharsets.US_ASCII));
 
     }
 
-    private long readValue(ChannelBuffer buf, int length, boolean signed) {
-        switch (length) {
-            case 1:
-                return signed ? buf.readByte() : buf.readUnsignedByte();
-            case 2:
-                return signed ? buf.readShort() : buf.readUnsignedShort();
-            case 4:
-                return signed ? buf.readInt() : buf.readUnsignedInt();
-            default:
-                return buf.readLong();
-        }
-    }
-
-    private void decodeParameter(Position position, int id, ChannelBuffer buf, int length) {
+    private void decodeParameter(Position position, int id, long value) {
         switch (id) {
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-                position.set("di" + id, readValue(buf, length, false));
-                break;
             case 9:
-                position.set(Position.PREFIX_ADC + 1, readValue(buf, length, false));
+                position.set(Position.PREFIX_ADC + 1, value);
                 break;
             case 66:
-                position.set(Position.KEY_POWER, readValue(buf, length, false) * 0.001);
+                position.set(Position.KEY_POWER, value);
                 break;
-            case 67:
-                position.set(Position.KEY_BATTERY, readValue(buf, length, false) * 0.001);
+            case 68:
+                position.set(Position.KEY_BATTERY, value);
                 break;
-            case 70:
-                position.set(Position.KEY_DEVICE_TEMP, readValue(buf, length, true) * 0.1);
-                break;
-            case 72:
-                position.set(Position.PREFIX_TEMP + 1, readValue(buf, length, true) * 0.1);
-                break;
-            case 73:
-                position.set(Position.PREFIX_TEMP + 2, readValue(buf, length, true) * 0.1);
-                break;
-            case 74:
-                position.set(Position.PREFIX_TEMP + 3, readValue(buf, length, true) * 0.1);
-                break;
-            case 78:
-                position.set(Position.KEY_RFID, readValue(buf, length, false));
+            case 85:
+                position.set(Position.KEY_RPM, value);
                 break;
             case 182:
-                position.set(Position.KEY_HDOP, readValue(buf, length, false) * 0.1);
+                position.set(Position.KEY_HDOP, value);
+                break;
+            case 239:
+                position.set(Position.KEY_IGNITION, value == 1);
                 break;
             default:
-                position.set(Position.PREFIX_IO + id, readValue(buf, length, false));
+                position.set(Position.PREFIX_IO + id, value);
                 break;
         }
     }
@@ -165,20 +135,16 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
                 }
 
                 if (BitUtil.check(locationMask, 5)) {
-                    CellTower cellTower = CellTower.fromLacCid(buf.readUnsignedShort(), buf.readUnsignedShort());
+                    position.setNetwork(new Network(
+                            CellTower.fromLacCid(buf.readUnsignedShort(), buf.readUnsignedShort())));
+                }
 
-                    if (BitUtil.check(locationMask, 6)) {
-                        cellTower.setSignalStrength((int) buf.readUnsignedByte());
-                    }
-
-                    position.setNetwork(new Network(cellTower));
-
-                } else if (BitUtil.check(locationMask, 6)) {
-                    position.set(Position.KEY_RSSI, buf.readUnsignedByte());
+                if (BitUtil.check(locationMask, 6)) {
+                    buf.readUnsignedByte(); // rssi
                 }
 
                 if (BitUtil.check(locationMask, 7)) {
-                    position.set(Position.KEY_OPERATOR, buf.readUnsignedInt());
+                    position.set("operator", buf.readUnsignedInt());
                 }
 
             } else {
@@ -215,7 +181,7 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
         if (BitUtil.check(globalMask, 1)) {
             int cnt = buf.readUnsignedByte();
             for (int j = 0; j < cnt; j++) {
-                decodeParameter(position, buf.readUnsignedByte(), buf, 1);
+                decodeParameter(position, buf.readUnsignedByte(), buf.readUnsignedByte());
             }
         }
 
@@ -223,7 +189,7 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
         if (BitUtil.check(globalMask, 2)) {
             int cnt = buf.readUnsignedByte();
             for (int j = 0; j < cnt; j++) {
-                decodeParameter(position, buf.readUnsignedByte(), buf, 2);
+                decodeParameter(position, buf.readUnsignedByte(), buf.readUnsignedShort());
             }
         }
 
@@ -231,7 +197,7 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
         if (BitUtil.check(globalMask, 3)) {
             int cnt = buf.readUnsignedByte();
             for (int j = 0; j < cnt; j++) {
-                decodeParameter(position, buf.readUnsignedByte(), buf, 4);
+                decodeParameter(position, buf.readUnsignedByte(), buf.readUnsignedInt());
             }
         }
 
@@ -239,25 +205,21 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
         if (codec == CODEC_FM4X00) {
             int cnt = buf.readUnsignedByte();
             for (int j = 0; j < cnt; j++) {
-                decodeParameter(position, buf.readUnsignedByte(), buf, 8);
+                decodeParameter(position, buf.readUnsignedByte(), buf.readLong());
             }
         }
 
     }
 
-    private List<Position> parseData(
-            Channel channel, SocketAddress remoteAddress, ChannelBuffer buf, int locationPacketId, String... imei) {
+    private List<Position> parseData(Channel channel, SocketAddress remoteAddress, ChannelBuffer buf) {
         List<Position> positions = new LinkedList<>();
 
-        if (!(channel instanceof DatagramChannel)) {
-            buf.readUnsignedInt(); // data length
-        }
-
+        buf.skipBytes(4); // marker
+        buf.readUnsignedInt(); // data length
         int codec = buf.readUnsignedByte();
         int count = buf.readUnsignedByte();
 
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, imei);
-
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress);
         if (deviceSession == null) {
             return null;
         }
@@ -278,58 +240,27 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
         }
 
         if (channel != null) {
-            if (channel instanceof DatagramChannel) {
-                ChannelBuffer response = ChannelBuffers.dynamicBuffer();
-                response.writeShort(5);
-                response.writeShort(0);
-                response.writeByte(0x01);
-                response.writeByte(locationPacketId);
-                response.writeByte(count);
-                channel.write(response, remoteAddress);
-            } else {
-                ChannelBuffer response = ChannelBuffers.dynamicBuffer();
-                response.writeInt(count);
-                channel.write(response);
-            }
+            ChannelBuffer response = ChannelBuffers.directBuffer(4);
+            response.writeInt(count);
+            channel.write(response);
         }
 
         return positions;
     }
 
     @Override
-    protected Object decode(Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
+    protected Object decode(
+            Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
         ChannelBuffer buf = (ChannelBuffer) msg;
-
-        if (channel instanceof DatagramChannel) {
-            return decodeUdp(channel, remoteAddress, buf);
-        } else {
-            return decodeTcp(channel, remoteAddress, buf);
-        }
-    }
-
-    private Object decodeTcp(Channel channel, SocketAddress remoteAddress, ChannelBuffer buf) throws Exception {
 
         if (buf.getUnsignedShort(0) > 0) {
             parseIdentification(channel, remoteAddress, buf);
         } else {
-            buf.skipBytes(4);
-            return parseData(channel, remoteAddress, buf, 0);
+            return parseData(channel, remoteAddress, buf);
         }
 
         return null;
-    }
-
-    private Object decodeUdp(Channel channel, SocketAddress remoteAddress, ChannelBuffer buf) throws Exception {
-
-        buf.readUnsignedShort(); // length
-        buf.readUnsignedShort(); // packet id
-        buf.readUnsignedByte(); // packet type
-        int locationPacketId = buf.readUnsignedByte();
-        String imei = buf.readBytes(buf.readUnsignedShort()).toString(StandardCharsets.US_ASCII);
-
-        return parseData(channel, remoteAddress, buf, locationPacketId, imei);
-
     }
 
 }

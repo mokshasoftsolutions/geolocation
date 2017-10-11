@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2017 Anton Tananaev (anton@traccar.org)
+ * Copyright 2016 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.traccar.protocol;
 import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.model.Position;
@@ -32,11 +33,9 @@ public class HomtecsProtocolDecoder extends BaseProtocolDecoder {
     }
 
     private static final Pattern PATTERN = new PatternBuilder()
-            .expression("([^_]+)")               // id
-            .text("_R")
-            .number("(x{8}),")                   // mac ending
-            .number("(dd)(dd)(dd),")             // date (yymmdd)
-            .number("(dd)(dd)(dd).d+,")          // time (hhmmss)
+            .expression("([^,]+),")              // id
+            .number("(dd)(dd)(dd),")             // date
+            .number("(dd)(dd)(dd).(d+),")        // time
             .number("(d+),")                     // satellites
             .number("(dd)(dd.d+),")              // latitude
             .expression("([NS]),")
@@ -44,9 +43,7 @@ public class HomtecsProtocolDecoder extends BaseProtocolDecoder {
             .expression("([EW]),")
             .number("(d+.?d*)?,")                // speed
             .number("(d+.?d*)?,")                // course
-            .number("(d),")                      // fix status
-            .number("(d+.?d*)?,")                // hdop
-            .number("(d+.?d*)?")                 // altitude
+            .any()
             .compile();
 
     @Override
@@ -58,32 +55,28 @@ public class HomtecsProtocolDecoder extends BaseProtocolDecoder {
             return null;
         }
 
-        String id = parser.next();
-        String mac = parser.next();
+        Position position = new Position();
+        position.setProtocol(getProtocolName());
 
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, id, id + "_R" + mac);
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
         if (deviceSession == null) {
             return null;
         }
-
-        Position position = new Position();
-        position.setProtocol(getProtocolName());
         position.setDeviceId(deviceSession.getDeviceId());
 
-        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.YMD_HMS));
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDate(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt(), parser.nextInt());
 
-        position.set(Position.KEY_SATELLITES, parser.nextInt(0));
+        position.setTime(dateBuilder.getDate());
+
+        position.setValid(true);
+        position.set(Position.KEY_SATELLITES, parser.nextInt());
 
         position.setLatitude(parser.nextCoordinate());
         position.setLongitude(parser.nextCoordinate());
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
-
-        position.setValid(parser.nextInt(0) > 0);
-
-        position.set(Position.KEY_HDOP, parser.nextDouble(0));
-
-        position.setAltitude(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
         return position;
     }

@@ -20,26 +20,25 @@ Ext.define('Traccar.view.SettingsMenuController', {
     alias: 'controller.settings',
 
     requires: [
-        'Traccar.view.dialog.LoginController',
-        'Traccar.view.dialog.User',
-        'Traccar.view.dialog.Server',
-        'Traccar.view.edit.Users',
-        'Traccar.view.edit.Groups',
-        'Traccar.view.edit.Geofences',
+        'Traccar.view.LoginController',
+        'Traccar.view.UserDialog',
+        'Traccar.view.ServerDialog',
+        'Traccar.view.Users',
+        'Traccar.view.Groups',
+        'Traccar.view.Geofences',
         'Traccar.view.Notifications',
-        'Traccar.view.edit.AttributeAliases',
+        'Traccar.view.AttributeAliases',
         'Traccar.view.Statistics',
-        'Traccar.view.dialog.DeviceDistance',
-        'Traccar.view.edit.Calendars',
+        'Traccar.view.DeviceDistanceDialog',
+        'Traccar.view.Calendars',
         'Traccar.view.BaseWindow'
     ],
 
     init: function () {
-        var admin, manager, readonly, deviceReadonly;
+        var admin, manager, readonly;
         admin = Traccar.app.getUser().get('admin');
-        manager = Traccar.app.getUser().get('userLimit') !== 0;
+        manager = Traccar.app.getUser().get('userLimit') > 0;
         readonly = Traccar.app.getPreference('readonly', false);
-        deviceReadonly = Traccar.app.getUser().get('deviceReadonly');
         if (admin) {
             this.lookupReference('settingsServerButton').setHidden(false);
             this.lookupReference('settingsStatisticsButton').setHidden(false);
@@ -49,23 +48,17 @@ Ext.define('Traccar.view.SettingsMenuController', {
             this.lookupReference('settingsUsersButton').setHidden(false);
         }
         if (admin || !readonly) {
-            this.lookupReference('settingsUserButton').setHidden(false);
             this.lookupReference('settingsGroupsButton').setHidden(false);
             this.lookupReference('settingsGeofencesButton').setHidden(false);
-            this.lookupReference('settingsNotificationsButton').setHidden(false);
-            this.lookupReference('settingsCalendarsButton').setHidden(false);
-        }
-        if (admin || (!deviceReadonly && !readonly)) {
             this.lookupReference('settingsAttributeAliasesButton').setHidden(false);
+            this.lookupReference('settingsCalendarsButton').setHidden(false);
         }
     },
 
     onUserClick: function () {
-        var dialog = Ext.create('Traccar.view.dialog.User', {
-            selfEdit: true
-        });
+        var dialog = Ext.create('Traccar.view.UserDialog');
         dialog.down('form').loadRecord(Traccar.app.getUser());
-        dialog.lookupReference('testNotificationButton').setHidden(false);
+        dialog.lookupReference('testMailButton').setHidden(false);
         dialog.show();
     },
 
@@ -90,7 +83,7 @@ Ext.define('Traccar.view.SettingsMenuController', {
     },
 
     onServerClick: function () {
-        var dialog = Ext.create('Traccar.view.dialog.Server');
+        var dialog = Ext.create('Traccar.view.ServerDialog');
         dialog.down('form').loadRecord(Traccar.app.getServer());
         dialog.show();
     },
@@ -138,7 +131,7 @@ Ext.define('Traccar.view.SettingsMenuController', {
     },
 
     onDeviceDistanceClick: function () {
-        var dialog = Ext.create('Traccar.view.dialog.DeviceDistance');
+        var dialog = Ext.create('Traccar.view.DeviceDistanceDialog');
         dialog.show();
     },
 
@@ -153,6 +146,6 @@ Ext.define('Traccar.view.SettingsMenuController', {
     },
 
     onLogoutClick: function () {
-        Ext.create('Traccar.view.dialog.LoginController').logout();
+        Ext.create('Traccar.view.LoginController').logout();
     }
 });

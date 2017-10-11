@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 - 2017 Anton Tananaev (anton@traccar.org)
+ * Copyright 2015 Anton Tananaev (anton@traccar.org)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,10 +22,9 @@ Ext.define('Traccar.view.MainMobile', {
     id: 'rootPanel',
 
     requires: [
-        'Traccar.view.edit.Devices',
+        'Traccar.view.Devices',
         'Traccar.view.State',
-        'Traccar.view.Report',
-        'Traccar.view.map.Map'
+        'Traccar.view.Map'
     ],
 
     layout: 'card',
@@ -47,8 +46,7 @@ Ext.define('Traccar.view.MainMobile', {
             collapsed: true,
             collapseMode: 'mini',
             titleCollapse: true,
-            floatable: false,
-            stateId: 'mobile-state-grid'
+            floatable: false
         }, {
             region: 'center',
             xtype: 'mapView',
@@ -61,8 +59,7 @@ Ext.define('Traccar.view.MainMobile', {
             flex: 1,
             collapsed: true,
             titleCollapse: true,
-            floatable: false,
-            stateId: 'mobile-devices-grid'
+            floatable: false
         }]
     }, {
         xtype: 'reportView'

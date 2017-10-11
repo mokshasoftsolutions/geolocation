@@ -34,15 +34,15 @@ Ext.define('Traccar.view.Notifications', {
         markDirty: false
     },
 
+    forceFit: true,
+
     columns: {
         defaults: {
-            flex: 1,
             minWidth: Traccar.Style.columnWidthNormal
         },
         items: [{
             text: Strings.notificationType,
             dataIndex: 'type',
-            flex: 2,
             renderer: function (value) {
                 return Traccar.app.getEventString(value);
             }
@@ -56,13 +56,6 @@ Ext.define('Traccar.view.Notifications', {
         }, {
             text: Strings.notificationMail,
             dataIndex: 'mail',
-            xtype: 'checkcolumn',
-            listeners: {
-                checkChange: 'onCheckChange'
-            }
-        }, {
-            text: Strings.notificationSms,
-            dataIndex: 'sms',
             xtype: 'checkcolumn',
             listeners: {
                 checkChange: 'onCheckChange'

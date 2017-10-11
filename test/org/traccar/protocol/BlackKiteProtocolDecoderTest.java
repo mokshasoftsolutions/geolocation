@@ -12,7 +12,7 @@ public class BlackKiteProtocolDecoderTest extends ProtocolTest {
 
         BlackKiteProtocolDecoder decoder = new BlackKiteProtocolDecoder(new BlackKiteProtocol());
 
-        verifyNull(decoder, binary(ByteOrder.LITTLE_ENDIAN,
+        verifyNothing(decoder, binary(ByteOrder.LITTLE_ENDIAN,
                 "01150003313131313131313131313131313131209836055605BA"));
         
         verifyPositions(decoder, binary(ByteOrder.LITTLE_ENDIAN,

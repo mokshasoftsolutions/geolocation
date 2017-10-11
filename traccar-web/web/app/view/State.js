@@ -26,9 +26,6 @@ Ext.define('Traccar.view.State', {
     controller: 'state',
     store: 'Attributes',
 
-    stateful: true,
-    stateId: 'state-grid',
-
     tbar: {
         componentCls: 'toolbar-header-style',
         items: [{

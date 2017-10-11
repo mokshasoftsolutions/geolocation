@@ -12,11 +12,10 @@
 
     <!-- DATABASE CONFIG -->
 
-   
     <entry key='database.driver'>com.mysql.jdbc.Driver</entry>
     <entry key='database.url'>jdbc:mysql://localhost:3306/jelly?allowMultiQueries=true</entry>
     <entry key='database.user'>root</entry>
-    <entry key='database.password'>moksha</entry>
+    <entry key='database.password'>siddhu</entry>
     
     <entry key='database.selectDevicesAll'>
         SELECT CONCAT('1', imeiNumber) AS id, imeiNumber AS uniqueId FROM Device WHERE imeiNumber REGEXP '^[0-9]+$';

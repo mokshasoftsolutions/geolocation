@@ -47,12 +47,12 @@ public class ArnaviProtocolDecoder extends BaseProtocolDecoder {
             .number("d+,d+,").optional()         // input 2
             .expression("[01],")                 // fix type
             .number("(d+),")                     // satellites
-            .number("(dd)(dd)(dd),")             // time (hhmmss)
+            .number("(dd)(dd)(dd),")             // time
             .number("(dd)(dd.d+)([NS]),")        // latitude
             .number("(ddd)(dd.d+)([EW]),")       // longitude
             .number("(d+.d+),")                  // speed
             .number("(d+.d+),")                  // course
-            .number("(dd)(dd)(dd)")              // date (ddmmyy)
+            .number("(dd)(dd)(dd)")              // date
             .any()
             .compile();
 
@@ -74,23 +74,23 @@ public class ArnaviProtocolDecoder extends BaseProtocolDecoder {
         }
         position.setDeviceId(deviceSession.getDeviceId());
 
-        position.set(Position.KEY_INDEX, parser.nextInt(0));
-        position.set(Position.KEY_POWER, parser.nextInt(0) * 0.01);
-        position.set(Position.KEY_BATTERY, parser.nextInt(0) * 0.01);
-        position.set(Position.KEY_IGNITION, parser.nextInt(0) == 1);
-        position.set(Position.KEY_INPUT, parser.nextInt(0));
-        position.set(Position.KEY_SATELLITES, parser.nextInt(0));
+        position.set(Position.KEY_INDEX, parser.nextInt());
+        position.set(Position.KEY_POWER, parser.nextInt() * 0.01);
+        position.set(Position.KEY_BATTERY, parser.nextInt() * 0.01);
+        position.set(Position.KEY_IGNITION, parser.nextInt() == 1);
+        position.set(Position.KEY_INPUT, parser.nextInt());
+        position.set(Position.KEY_SATELLITES, parser.nextInt());
 
         DateBuilder dateBuilder = new DateBuilder()
-                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
 
         position.setValid(true);
         position.setLatitude(parser.nextCoordinate());
         position.setLongitude(parser.nextCoordinate());
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
-        dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
         position.setTime(dateBuilder.getDate());
 
         return position;

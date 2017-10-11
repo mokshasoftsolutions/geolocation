@@ -10,7 +10,7 @@ public class Tr20ProtocolDecoderTest extends ProtocolTest {
 
         Tr20ProtocolDecoder decoder = new Tr20ProtocolDecoder(new Tr20Protocol());
 
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "%%TRACKPRO01,1"));
 
         verifyPosition(decoder, text(

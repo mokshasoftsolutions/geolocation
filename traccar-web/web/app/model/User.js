@@ -32,9 +32,6 @@ Ext.define('Traccar.model.User', {
         name: 'password',
         type: 'string'
     }, {
-        name: 'phone',
-        type: 'string'
-    }, {
         name: 'readonly',
         type: 'boolean'
     }, {
@@ -78,13 +75,7 @@ Ext.define('Traccar.model.User', {
         name: 'userLimit',
         type: 'int'
     }, {
-        name: 'deviceReadonly',
-        type: 'boolean'
-    }, {
         name: 'token',
-        type: 'string'
-    }, {
-        name: 'timezone',
         type: 'string'
     }, {
         name: 'attributes'

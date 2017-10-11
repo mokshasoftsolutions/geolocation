@@ -32,7 +32,7 @@ public class WialonProtocol extends BaseProtocol {
 
     public WialonProtocol() {
         super("wialon");
-        setSupportedDataCommands(
+        setSupportedCommands(
                 Command.TYPE_REBOOT_DEVICE,
                 Command.TYPE_SEND_USSD,
                 Command.TYPE_IDENTIFICATION,

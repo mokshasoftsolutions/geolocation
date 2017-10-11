@@ -33,13 +33,13 @@ Ext.define('Traccar.store.SpeedUnits', {
         factor: 1.15078
     }],
 
-    convertValue: function (value, unit, back) {
+    convertValue: function (value, unit) {
         var model;
         if (!unit) {
             unit = 'kn';
         }
         model = this.findRecord('key', unit);
-        return back ? value / model.get('factor') : value * model.get('factor');
+        return value * model.get('factor');
     },
 
     formatValue: function (value, unit) {

@@ -1,15 +1,17 @@
 package org.traccar.geocoder;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class GeocoderTest {
 
-    @Ignore
+    private boolean enable = false;
+
     @Test
     public void test() throws InterruptedException {
-        testGoogle();
+        if (enable) {
+            testGeocodeFarm();
+        }
     }
 
     private String address;
@@ -29,9 +31,9 @@ public class GeocoderTest {
     }
 
     public void testGoogle() throws InterruptedException {
-        Geocoder geocoder = new GoogleGeocoder(null, null, 0);
+        Geocoder geocoder = new GoogleGeocoder();
 
-        geocoder.getAddress(new AddressFormat(), 31.776797, 35.211489, new Geocoder.ReverseGeocoderCallback() {
+        geocoder.getAddress(new AddressFormat(), 37.4217550, -122.0846330, new Geocoder.ReverseGeocoderCallback() {
             @Override
             public void onSuccess(String address) {
                 setAddress(address);
@@ -41,11 +43,11 @@ public class GeocoderTest {
             public void onFailure(Throwable e) {
             }
         });
-        Assert.assertEquals("1 Ibn Shaprut St, Jerusalem, Jerusalem District, IL", waitAddress());
+        Assert.assertEquals("1600 Amphitheatre Pkwy, Mountain View, CA, US", waitAddress());
     }
 
     public void testNominatim() throws InterruptedException {
-        Geocoder geocoder = new NominatimGeocoder(null, null, null, 0);
+        Geocoder geocoder = new NominatimGeocoder();
 
         geocoder.getAddress(new AddressFormat(), 40.7337807, -73.9974401, new Geocoder.ReverseGeocoderCallback() {
             @Override
@@ -94,7 +96,7 @@ public class GeocoderTest {
     }
 
     public void testGeocodeFarm() throws InterruptedException {
-        Geocoder geocoder = new GeocodeFarmGeocoder(null, null, 0);
+        Geocoder geocoder = new GeocodeFarmGeocoder(0);
 
         geocoder.getAddress(new AddressFormat(), 34.116302, -118.051519, new Geocoder.ReverseGeocoderCallback() {
             @Override

@@ -36,7 +36,7 @@ public class RitiProtocolDecoder extends BaseProtocolDecoder {
 
     private static final Pattern PATTERN = new PatternBuilder()
             .text("$GPRMC,")
-            .number("(dd)(dd)(dd).?d*,")         // time (hhmmss)
+            .number("(dd)(dd)(dd).?d*,")         // time
             .expression("([AV]),")               // validity
             .number("(dd)(dd.d+),")              // latitude
             .expression("([NS]),")
@@ -66,15 +66,15 @@ public class RitiProtocolDecoder extends BaseProtocolDecoder {
         position.setDeviceId(deviceSession.getDeviceId());
 
         position.set("mode", buf.readUnsignedByte());
-        position.set(Position.KEY_COMMAND, buf.readUnsignedByte());
-        position.set(Position.KEY_POWER, buf.readUnsignedShort() * 0.001);
+        position.set("command", buf.readUnsignedByte());
+        position.set(Position.KEY_POWER, buf.readUnsignedShort());
 
-        buf.skipBytes(5);  // status
-        buf.readUnsignedShort();  // idleCount
-        buf.readUnsignedShort();  // idleTime in seconds
+        buf.skipBytes(5);
+        buf.readUnsignedShort();
+        buf.readUnsignedShort();
 
         position.set(Position.KEY_DISTANCE, buf.readUnsignedInt());
-        position.set(Position.KEY_ODOMETER_TRIP, buf.readUnsignedInt());
+        position.set(Position.KEY_TRIP_ODOMETER, buf.readUnsignedInt());
 
         // Parse GPRMC
         int end = buf.indexOf(buf.readerIndex(), buf.writerIndex(), (byte) '*');
@@ -85,15 +85,15 @@ public class RitiProtocolDecoder extends BaseProtocolDecoder {
         }
 
         DateBuilder dateBuilder = new DateBuilder()
-                .setTime(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
 
         position.setValid(parser.next().equals("A"));
         position.setLatitude(parser.nextCoordinate());
         position.setLongitude(parser.nextCoordinate());
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
-        dateBuilder.setDateReverse(parser.nextInt(0), parser.nextInt(0), parser.nextInt(0));
+        dateBuilder.setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
         position.setTime(dateBuilder.getDate());
 
         return position;

@@ -18,6 +18,7 @@ package org.traccar.protocol;
 import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.model.Position;
@@ -36,7 +37,7 @@ public class YwtProtocolDecoder extends BaseProtocolDecoder {
             .number("(d+):")                     // unit identifier
             .number("d+,")                       // subtype
             .number("(dd)(dd)(dd)")              // date (yymmdd)
-            .number("(dd)(dd)(dd),")             // time (hhmmss)
+            .number("(dd)(dd)(dd),")             // time
             .expression("([EW])")
             .number("(ddd.d{6}),")               // longitude
             .expression("([NS])")
@@ -87,15 +88,18 @@ public class YwtProtocolDecoder extends BaseProtocolDecoder {
         }
         position.setDeviceId(deviceSession.getDeviceId());
 
-        position.setTime(parser.nextDateTime());
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDate(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
         position.setLongitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG));
         position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.HEM_DEG));
-        position.setAltitude(parser.nextDouble(0));
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
+        position.setAltitude(parser.nextDouble());
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
-        int satellites = parser.nextInt(0);
+        int satellites = parser.nextInt();
         position.setValid(satellites >= 3);
         position.set(Position.KEY_SATELLITES, satellites);
 

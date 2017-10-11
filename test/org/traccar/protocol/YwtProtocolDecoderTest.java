@@ -10,7 +10,7 @@ public class YwtProtocolDecoderTest extends ProtocolTest {
 
         YwtProtocolDecoder decoder = new YwtProtocolDecoder(new YwtProtocol());
         
-        verifyNull(decoder, text(
+        verifyNothing(decoder, text(
                 "%SN,0417061042:0,0,140117041203,404"));
 
         verifyPosition(decoder, text(

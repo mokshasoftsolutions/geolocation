@@ -47,7 +47,7 @@ public class Device extends Extensible {
     private String status;
 
     public String getStatus() {
-        return status != null ? status : STATUS_OFFLINE;
+        return status;
     }
 
     public void setStatus(String status) {

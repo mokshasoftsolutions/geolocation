@@ -1,6 +1,5 @@
 /*
  * Copyright 2016 Gabor Somogyi (gabor.g.somogyi@gmail.com)
- * Copyright 2017 Andrey Kunitsyn (andrey@traccar.org)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +19,17 @@ Ext.define('Traccar.store.CommandTypes', {
     extend: 'Ext.data.Store',
     fields: ['type', 'name'],
 
+    listeners: {
+        'beforeload' : function (store) {
+            var proxy;
+            proxy = store.getProxy();
+            proxy.setUrl('api/commandtypes?deviceId' + proxy.extraParams.deviceId);
+        }
+    },
+
     proxy: {
         type: 'rest',
-        url: 'api/commandtypes',
+        url: '',
         reader: {
             type: 'json',
             getData: function (data) {
@@ -38,11 +45,6 @@ Ext.define('Traccar.store.CommandTypes', {
                     }
                 });
                 return data;
-            }
-        },
-        listeners: {
-            'exception' : function (proxy, response) {
-                Traccar.app.showError(response);
             }
         }
     }

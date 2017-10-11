@@ -19,6 +19,7 @@ import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.Context;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.model.Position;
@@ -41,8 +42,8 @@ public class TrakMateProtocolDecoder extends BaseProtocolDecoder {
             .expression("([^ ]+)|")              // uid
             .number("(d+.d+)|")                  // latitude
             .number("(d+.d+)|")                  // longitude
-            .number("(dd)(dd)(dd)|")             // time (hhmmss)
-            .number("(dd)(dd)(dd)|")             // date (ddmmyy)
+            .number("(dd)(dd)(dd)|")             // time
+            .number("(dd)(dd)(dd)|")             // date
             .number("(d+.d+)|")                  // software ver
             .number("(d+.d+)|")                  // Hardware ver
             .any()
@@ -54,8 +55,8 @@ public class TrakMateProtocolDecoder extends BaseProtocolDecoder {
             .number("(d+)|")                     // seq
             .number("(d+.d+)|")                  // latitude
             .number("(d+.d+)|")                  // longitude
-            .number("(dd)(dd)(dd)|")             // time (hhmmss)
-            .number("(dd)(dd)(dd)|")             // date (ddmmyy)
+            .number("(dd)(dd)(dd)|")             // time
+            .number("(dd)(dd)(dd)|")             // date
             .number("(d+.d+)|")                  // speed
             .number("(d+.d+)|")                  // heading
             .number("(d+)|")                     // ignition
@@ -80,8 +81,8 @@ public class TrakMateProtocolDecoder extends BaseProtocolDecoder {
             .number("(d+)|")                     // Alert status
             .number("(d+.d+)|")                  // latitude
             .number("(d+.d+)|")                  // longitude
-            .number("(dd)(dd)(dd)|")             // time (hhmmss)
-            .number("(dd)(dd)(dd)|")             // date (ddmmyy)
+            .number("(dd)(dd)(dd)|")             // time
+            .number("(dd)(dd)(dd)|")             // date
             .number("(d+.d+)|")                  // speed
             .number("(d+.d+)|")                  // heading
             .any()
@@ -116,13 +117,16 @@ public class TrakMateProtocolDecoder extends BaseProtocolDecoder {
         position.setProtocol(getProtocolName());
         position.setDeviceId(deviceSession.getDeviceId());
 
-        position.setLatitude(parser.nextDouble(0));
-        position.setLongitude(parser.nextDouble(0));
+        position.setLatitude(parser.nextDouble());
+        position.setLongitude(parser.nextDouble());
 
-        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY));
+        DateBuilder dateBuilder = new DateBuilder(timeZone)
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
-        position.set(Position.KEY_VERSION_FW, parser.next());
-        position.set(Position.KEY_VERSION_HW, parser.next());
+        position.set(Position.KEY_VERSION, parser.next());
+        parser.next(); // hardware version
 
         return position;
     }
@@ -144,16 +148,19 @@ public class TrakMateProtocolDecoder extends BaseProtocolDecoder {
         position.setDeviceId(deviceSession.getDeviceId());
 
         parser.next(); // seq
-        position.set(Position.KEY_ALARM, decodeAlarm(parser.nextInt(0)));
+        position.set(Position.KEY_ALARM, decodeAlarm(parser.nextInt()));
         parser.next(); // alert status or data
 
-        position.setLatitude(parser.nextDouble(0));
-        position.setLongitude(parser.nextDouble(0));
+        position.setLatitude(parser.nextDouble());
+        position.setLongitude(parser.nextDouble());
 
-        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY));
+        DateBuilder dateBuilder = new DateBuilder(timeZone)
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
         return position;
     }
@@ -176,27 +183,30 @@ public class TrakMateProtocolDecoder extends BaseProtocolDecoder {
 
         parser.next(); // seq
 
-        position.setLatitude(parser.nextDouble(0));
-        position.setLongitude(parser.nextDouble(0));
+        position.setLatitude(parser.nextDouble());
+        position.setLongitude(parser.nextDouble());
 
-        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.HMS_DMY));
+        DateBuilder dateBuilder = new DateBuilder(timeZone)
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
-        position.set(Position.KEY_IGNITION, parser.nextInt(0) == 1);
-        position.set("dop1", parser.next());
-        position.set("dop2", parser.next());
-        position.set(Position.KEY_INPUT, parser.next());
-        position.set(Position.KEY_BATTERY, parser.nextDouble(0));
-        position.set(Position.KEY_POWER, parser.next());
-        position.set(Position.KEY_ODOMETER, parser.nextDouble(0));
-        position.set("pulseOdometer", parser.next());
-        position.set(Position.KEY_STATUS, parser.nextInt(0));
+        position.set(Position.KEY_IGNITION, parser.nextInt() == 1);
+        parser.next(); // dop1
+        parser.next(); // dop2
+        parser.next(); // analog input
+        position.set(Position.KEY_BATTERY, parser.nextDouble()); // device battery voltage
+        parser.next(); // vehicle internal voltage
+        position.set(Position.KEY_ODOMETER, parser.nextDouble()); // gps odometer
+        parser.next(); // pulse odometer
+        position.set(Position.KEY_STATUS, parser.nextInt());
 
-        position.setValid(parser.nextInt(0) != 0);
+        position.setValid(parser.nextInt() != 0);
 
-        position.set(Position.KEY_ARCHIVE, parser.nextInt(0) == 1);
+        position.set(Position.KEY_ARCHIVE, parser.nextInt() == 1);
 
         return position;
     }

@@ -6,8 +6,10 @@ import org.jboss.netty.handler.codec.http.DefaultHttpRequest;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpVersion;
 import org.junit.Assert;
+import org.traccar.database.IdentityManager;
 import org.traccar.model.CellTower;
 import org.traccar.model.Command;
+import org.traccar.model.Device;
 import org.traccar.model.Position;
 
 import javax.xml.bind.DatatypeConverter;
@@ -82,12 +84,8 @@ public class ProtocolTest extends BaseTest {
         Assert.assertNotNull(decoder.decode(null, null, object));
     }
 
-    protected void verifyNull(BaseProtocolDecoder decoder, Object object) throws Exception {
+    protected void verifyNothing(BaseProtocolDecoder decoder, Object object) throws Exception {
         Assert.assertNull(decoder.decode(null, null, object));
-    }
-
-    protected void verifyAttribute(BaseProtocolDecoder decoder, Object object, String key, Object expected) throws Exception {
-        Assert.assertEquals(expected, ((Position) decoder.decode(null, null, object)).getAttributes().get(key));
     }
 
     protected void verifyAttributes(BaseProtocolDecoder decoder, Object object) throws Exception {
@@ -149,7 +147,7 @@ public class ProtocolTest extends BaseTest {
             } else {
 
                 Assert.assertNotNull(position.getFixTime());
-                Assert.assertTrue("year > 1999", position.getFixTime().after(new Date(915148800000L)));
+                Assert.assertTrue("year > 2000", position.getFixTime().after(new Date(946684800000L)));
                 Assert.assertTrue("time < +25 hours",
                         position.getFixTime().getTime() < System.currentTimeMillis() + 25 * 3600000);
 
@@ -178,18 +176,6 @@ public class ProtocolTest extends BaseTest {
 
         if (checkAttributes) {
             Assert.assertFalse("no attributes", attributes.isEmpty());
-        }
-
-        if (attributes.containsKey(Position.KEY_ODOMETER)) {
-            Assert.assertTrue(attributes.get(Position.KEY_ODOMETER) instanceof Number);
-        }
-
-        if (attributes.containsKey(Position.KEY_RPM)) {
-            Assert.assertTrue(attributes.get(Position.KEY_RPM) instanceof Number);
-        }
-
-        if (attributes.containsKey(Position.KEY_FUEL_LEVEL)) {
-            Assert.assertTrue(attributes.get(Position.KEY_FUEL_LEVEL) instanceof Number);
         }
 
         if (position.getNetwork() != null && position.getNetwork().getCellTowers() != null) {

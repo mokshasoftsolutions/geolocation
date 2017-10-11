@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 - 2017 Anton Tananaev (anton@traccar.org)
+ * Copyright 2015 - 2016 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,11 +42,6 @@ public class Command extends Message {
     public static final String TYPE_VOICE_MONITORING = "voiceMonitoring";
     public static final String TYPE_SET_AGPS = "setAgps";
     public static final String TYPE_SET_INDICATOR = "setIndicator";
-    public static final String TYPE_CONFIGURATION = "configuration";
-    public static final String TYPE_GET_VERSION = "getVersion";
-    public static final String TYPE_FIRMWARE_UPDATE = "firmwareUpdate";
-    public static final String TYPE_SET_CONNECTION = "setConnection";
-    public static final String TYPE_SET_ODOMETER = "setOdometer";
 
     public static final String TYPE_MODE_POWER_SAVING = "modePowerSaving";
     public static final String TYPE_MODE_DEEP_SLEEP = "modeDeepSleep";
@@ -70,17 +65,5 @@ public class Command extends Message {
     public static final String KEY_DATA = "data";
     public static final String KEY_INDEX = "index";
     public static final String KEY_PHONE = "phone";
-    public static final String KEY_SERVER = "server";
-    public static final String KEY_PORT = "port";
-
-    private boolean textChannel;
-
-    public boolean getTextChannel() {
-        return textChannel;
-    }
-
-    public void setTextChannel(boolean textChannel) {
-        this.textChannel = textChannel;
-    }
 
 }

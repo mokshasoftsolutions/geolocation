@@ -18,6 +18,7 @@ package org.traccar.protocol;
 import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.model.Position;
@@ -35,8 +36,8 @@ public class AppelloProtocolDecoder extends BaseProtocolDecoder {
             .text("FOLLOWIT,")                   // brand
             .number("(d+),")                     // imei
             .groupBegin()
-            .number("(dd)(dd)(dd)")              // date (yymmdd)
-            .number("(dd)(dd)(dd).?d*,")         // time (hhmmss)
+            .number("(dd)(dd)(dd)")              // date
+            .number("(dd)(dd)(dd).?d*,")         // time
             .or()
             .text("UTCTIME,")
             .groupEnd()
@@ -70,19 +71,22 @@ public class AppelloProtocolDecoder extends BaseProtocolDecoder {
         position.setDeviceId(deviceSession.getDeviceId());
 
         if (parser.hasNext(6)) {
-            position.setTime(parser.nextDateTime());
+            DateBuilder dateBuilder = new DateBuilder()
+                    .setDate(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                    .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+            position.setTime(dateBuilder.getDate());
         } else {
             getLastLocation(position, null);
         }
 
-        position.setLatitude(parser.nextDouble(0));
-        position.setLongitude(parser.nextDouble(0));
-        position.setSpeed(parser.nextDouble(0));
-        position.setCourse(parser.nextDouble(0));
+        position.setLatitude(parser.nextDouble());
+        position.setLongitude(parser.nextDouble());
+        position.setSpeed(parser.nextDouble());
+        position.setCourse(parser.nextDouble());
 
-        position.set(Position.KEY_SATELLITES, parser.nextInt(0));
+        position.set(Position.KEY_SATELLITES, parser.nextInt());
 
-        position.setAltitude(parser.nextDouble(0));
+        position.setAltitude(parser.nextDouble());
 
         position.setValid(parser.next().equals("F"));
 

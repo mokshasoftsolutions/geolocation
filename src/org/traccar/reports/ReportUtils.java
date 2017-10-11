@@ -16,28 +16,14 @@
  */
 package org.traccar.reports;
 
-import org.apache.velocity.tools.generic.DateTool;
-import org.apache.velocity.tools.generic.NumberTool;
-import org.jxls.area.Area;
-import org.jxls.builder.xls.XlsCommentAreaBuilder;
-import org.jxls.common.CellRef;
-import org.jxls.formula.StandardFormulaProcessor;
-import org.jxls.transform.Transformer;
-import org.jxls.transform.poi.PoiTransformer;
-import org.jxls.util.TransformerFactory;
 import org.traccar.Context;
+import org.traccar.helper.Log;
 import org.traccar.model.Position;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
 
 public final class ReportUtils {
 
@@ -45,16 +31,19 @@ public final class ReportUtils {
     }
 
     public static String getDistanceUnit(long userId) {
-        return (String) Context.getPermissionsManager().lookupPreference(userId, "distanceUnit", "km");
+        String unit = Context.getPermissionsManager().getUser(userId).getDistanceUnit();
+        if (unit == null) {
+            unit  = Context.getPermissionsManager().getServer().getDistanceUnit();
+        }
+        return unit != null ? unit : "km";
     }
 
     public static String getSpeedUnit(long userId) {
-        return (String) Context.getPermissionsManager().lookupPreference(userId, "speedUnit", "kn");
-    }
-
-    public static TimeZone getTimezone(long userId) {
-        String timezone = (String) Context.getPermissionsManager().lookupPreference(userId, "timezone", null);
-        return timezone != null ? TimeZone.getTimeZone(timezone) : TimeZone.getDefault();
+        String unit = Context.getPermissionsManager().getUser(userId).getSpeedUnit();
+        if (unit == null) {
+            unit  = Context.getPermissionsManager().getServer().getSpeedUnit();
+        }
+        return unit != null ? unit : "kn";
     }
 
     public static Collection<Long> getDeviceList(Collection<Long> deviceIds, Collection<Long> groupIds) {
@@ -72,8 +61,10 @@ public final class ReportUtils {
 
     public static double calculateDistance(Position firstPosition, Position lastPosition, boolean useOdometer) {
         double distance = 0.0;
-        double firstOdometer = firstPosition.getDouble(Position.KEY_ODOMETER);
-        double lastOdometer = lastPosition.getDouble(Position.KEY_ODOMETER);
+        double firstOdometer = 0.0;
+        double lastOdometer = 0.0;
+        firstOdometer = firstPosition.getDouble(Position.KEY_ODOMETER);
+        lastOdometer = lastPosition.getDouble(Position.KEY_ODOMETER);
 
         if (useOdometer && (firstOdometer != 0.0 || lastOdometer != 0.0)) {
             distance = lastOdometer - firstOdometer;
@@ -87,40 +78,24 @@ public final class ReportUtils {
 
     public static String calculateFuel(Position firstPosition, Position lastPosition) {
 
-        if (firstPosition.getAttributes().get(Position.KEY_FUEL_LEVEL) != null
-                && lastPosition.getAttributes().get(Position.KEY_FUEL_LEVEL) != null) {
-
-            BigDecimal value = new BigDecimal(firstPosition.getDouble(Position.KEY_FUEL_LEVEL)
-                    - lastPosition.getDouble(Position.KEY_FUEL_LEVEL));
-            return value.setScale(1, RoundingMode.HALF_EVEN).toString();
+        if (firstPosition.getAttributes().get(Position.KEY_FUEL) != null
+                && lastPosition.getAttributes().get(Position.KEY_FUEL) != null) {
+            try {
+                switch (firstPosition.getProtocol()) {
+                    case "meitrack":
+                    case "galileo":
+                    case "noran":
+                        BigDecimal v = new BigDecimal(firstPosition.getAttributes().get(Position.KEY_FUEL).toString());
+                        v = v.subtract(new BigDecimal(lastPosition.getAttributes().get(Position.KEY_FUEL).toString()));
+                        return v.setScale(2, RoundingMode.HALF_EVEN).toString() + " %";
+                    default:
+                        break;
+                }
+            } catch (Exception error) {
+                Log.warning(error);
+            }
         }
-        return null;
-    }
-
-    public static org.jxls.common.Context initializeContext(long userId) {
-        org.jxls.common.Context jxlsContext = PoiTransformer.createInitialContext();
-        jxlsContext.putVar("distanceUnit", getDistanceUnit(userId));
-        jxlsContext.putVar("speedUnit", getSpeedUnit(userId));
-        jxlsContext.putVar("webUrl", Context.getVelocityEngine().getProperty("web.url"));
-        jxlsContext.putVar("dateTool", new DateTool());
-        jxlsContext.putVar("numberTool", new NumberTool());
-        jxlsContext.putVar("timezone", getTimezone(userId));
-        jxlsContext.putVar("locale", Locale.getDefault());
-        jxlsContext.putVar("bracketsRegex", "[\\{\\}\"]");
-        return jxlsContext;
-    }
-
-    public static void processTemplateWithSheets(InputStream templateStream, OutputStream targetStream,
-            org.jxls.common.Context jxlsContext) throws IOException {
-        Transformer transformer = TransformerFactory.createTransformer(templateStream, targetStream);
-        List<Area> xlsAreas = new XlsCommentAreaBuilder(transformer).build();
-        for (Area xlsArea : xlsAreas) {
-            xlsArea.applyAt(new CellRef(xlsArea.getStartCellRef().getCellName()), jxlsContext);
-            xlsArea.setFormulaProcessor(new StandardFormulaProcessor());
-            xlsArea.processFormulas();
-        }
-        transformer.deleteSheet(xlsAreas.get(0).getStartCellRef().getSheetName());
-        transformer.write();
+        return "-";
     }
 
 }

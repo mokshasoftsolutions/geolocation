@@ -18,6 +18,7 @@ package org.traccar.protocol;
 import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
 import org.traccar.helper.Parser;
 import org.traccar.helper.PatternBuilder;
 import org.traccar.helper.UnitsConverter;
@@ -36,8 +37,8 @@ public class VisiontekProtocolDecoder extends BaseProtocolDecoder {
             .text("$1,")
             .expression("([^,]+),")              // identifier
             .number("(d+),").optional()          // imei
-            .number("(dd),(dd),(dd),")           // date (dd,mm,yy)
-            .number("(dd),(dd),(dd),")           // time (hh,mm,ss)
+            .number("(dd),(dd),(dd),")           // date
+            .number("(dd),(dd),(dd),")           // time
             .groupBegin()
             .number("(dd)(dd).?(d+)([NS]),")     // latitude
             .number("(ddd)(dd).?(d+)([EW]),")    // longitude
@@ -90,7 +91,10 @@ public class VisiontekProtocolDecoder extends BaseProtocolDecoder {
         }
         position.setDeviceId(deviceSession.getDeviceId());
 
-        position.setTime(parser.nextDateTime(Parser.DateTimeFormat.DMY_HMS));
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDateReverse(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
 
         if (parser.hasNext(8)) {
             position.setLatitude(parser.nextCoordinate(Parser.CoordinateFormat.DEG_MIN_MIN_HEM));
@@ -104,12 +108,12 @@ public class VisiontekProtocolDecoder extends BaseProtocolDecoder {
         position.setSpeed(UnitsConverter.knotsFromKph(Double.parseDouble(
                 parser.next().replace(".", "")) / 10));
 
-        position.setCourse(parser.nextDouble(0));
+        position.setCourse(parser.nextDouble());
 
         if (parser.hasNext(9)) {
-            position.setAltitude(parser.nextDouble(0));
+            position.setAltitude(parser.nextDouble());
             position.set(Position.KEY_SATELLITES, parser.next());
-            position.set(Position.KEY_ODOMETER, parser.nextInt(0) * 1000);
+            position.set(Position.KEY_ODOMETER, parser.nextInt() * 1000);
             position.set(Position.KEY_IGNITION, parser.next().equals("1"));
             position.set(Position.PREFIX_IO + 1, parser.next());
             position.set(Position.PREFIX_IO + 2, parser.next());
@@ -120,8 +124,8 @@ public class VisiontekProtocolDecoder extends BaseProtocolDecoder {
 
         if (parser.hasNext(7)) {
             position.set(Position.KEY_HDOP, parser.next());
-            position.setAltitude(parser.nextDouble(0));
-            position.set(Position.KEY_ODOMETER, parser.nextInt(0) * 1000);
+            position.setAltitude(parser.nextDouble());
+            position.set(Position.KEY_ODOMETER, parser.nextInt() * 1000);
             position.set(Position.KEY_INPUT, parser.next());
             position.set(Position.KEY_OUTPUT, parser.next());
             position.set(Position.PREFIX_ADC + 1, parser.next());

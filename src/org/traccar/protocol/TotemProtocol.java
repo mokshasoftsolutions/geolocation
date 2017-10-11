@@ -29,7 +29,7 @@ public class TotemProtocol extends BaseProtocol {
 
     public TotemProtocol() {
         super("totem");
-        setSupportedDataCommands(
+        setSupportedCommands(
                 Command.TYPE_ENGINE_RESUME,
                 Command.TYPE_ENGINE_STOP
         );

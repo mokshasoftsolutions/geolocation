@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 - 2017 Anton Tananaev (anton@traccar.org)
+ * Copyright 2013 - 2015 Anton Tananaev (anton@traccar.org)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,165 +17,85 @@ package org.traccar.protocol;
 
 import org.jboss.netty.channel.Channel;
 import org.traccar.BaseProtocolDecoder;
-import org.traccar.Context;
 import org.traccar.DeviceSession;
+import org.traccar.helper.DateBuilder;
+import org.traccar.helper.Parser;
+import org.traccar.helper.PatternBuilder;
 import org.traccar.helper.UnitsConverter;
 import org.traccar.model.Position;
 
 import java.net.SocketAddress;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.TimeZone;
+import java.util.regex.Pattern;
 
 public class SuntechProtocolDecoder extends BaseProtocolDecoder {
 
-    private int protocolType;
-    private boolean hbm;
-
     public SuntechProtocolDecoder(SuntechProtocol protocol) {
         super(protocol);
-
-        protocolType = Context.getConfig().getInteger(getProtocolName() + ".protocolType");
-        hbm = Context.getConfig().getBoolean(getProtocolName() + ".hbm");
     }
 
-    public void setProtocolType(int protocolType) {
-        this.protocolType = protocolType;
-    }
-
-    private Position decode9(
-            Channel channel, SocketAddress remoteAddress, String[] values) throws ParseException {
-        int index = 1;
-
-        String type = values[index++];
-
-        if (!type.equals("Location") && !type.equals("Emergency") && !type.equals("Alert")) {
-            return null;
-        }
-
-        Position position = new Position();
-        position.setProtocol(getProtocolName());
-
-        if (type.equals("Emergency") || type.equals("Alert")) {
-            position.set(Position.KEY_ALARM, Position.ALARM_GENERAL);
-        }
-
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, values[index++]);
-        if (deviceSession == null) {
-            return null;
-        }
-        position.setDeviceId(deviceSession.getDeviceId());
-
-        if (!type.equals("Alert") || protocolType == 0) {
-            position.set(Position.KEY_VERSION_FW, values[index++]);
-        }
-
-        DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHH:mm:ss");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        position.setTime(dateFormat.parse(values[index++] + values[index++]));
-
-        if (protocolType == 1) {
-            index += 1; // cell
-        }
-
-        position.setLatitude(Double.parseDouble(values[index++]));
-        position.setLongitude(Double.parseDouble(values[index++]));
-        position.setSpeed(UnitsConverter.knotsFromKph(Double.parseDouble(values[index++])));
-        position.setCourse(Double.parseDouble(values[index++]));
-
-        position.setValid(values[index++].equals("1"));
-
-        if (protocolType == 1) {
-            position.set(Position.KEY_ODOMETER, Integer.parseInt(values[index]));
-        }
-
-        return position;
-    }
-
-    private Position decode23(
-            Channel channel, SocketAddress remoteAddress, String protocol, String[] values) throws ParseException {
-        int index = 0;
-
-        String type = values[index++].substring(5);
-
-        if (!type.equals("STT") && !type.equals("EMG") && !type.equals("EVT") && !type.equals("ALT")) {
-            return null;
-        }
-
-        Position position = new Position();
-        position.setProtocol(getProtocolName());
-
-        if (type.equals("EMG") || type.equals("ALT")) {
-            position.set(Position.KEY_ALARM, Position.ALARM_GENERAL);
-        }
-
-        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, values[index++]);
-        if (deviceSession == null) {
-            return null;
-        }
-        position.setDeviceId(deviceSession.getDeviceId());
-
-        if (protocol.equals("ST300")) {
-            index += 1; // model
-        }
-
-        position.set(Position.KEY_VERSION_FW, values[index++]);
-
-        DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHH:mm:ss");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        position.setTime(dateFormat.parse(values[index++] + values[index++]));
-
-        index += 1; // cell
-
-        position.setLatitude(Double.parseDouble(values[index++]));
-        position.setLongitude(Double.parseDouble(values[index++]));
-        position.setSpeed(UnitsConverter.knotsFromKph(Double.parseDouble(values[index++])));
-        position.setCourse(Double.parseDouble(values[index++]));
-
-        position.set(Position.KEY_SATELLITES, Integer.parseInt(values[index++]));
-
-        position.setValid(values[index++].equals("1"));
-
-        position.set(Position.KEY_ODOMETER, Integer.parseInt(values[index++]));
-        position.set(Position.KEY_POWER, Double.parseDouble(values[index++]));
-
-        position.set(Position.PREFIX_IO + 1, values[index++]);
-
-        index += 1; // mode
-
-        if (type.equals("STT")) {
-            position.set(Position.KEY_INDEX, Integer.parseInt(values[index++]));
-        }
-
-        if (hbm) {
-
-            if (index < values.length) {
-                position.set(Position.KEY_HOURS, Integer.parseInt(values[index++]));
-            }
-
-            if (index < values.length) {
-                position.set(Position.KEY_BATTERY, Double.parseDouble(values[index]));
-            }
-
-        }
-
-        return position;
-    }
+    private static final Pattern PATTERN = new PatternBuilder()
+            .expression("S.")
+            .number("ddd")
+            .expression("(?:[A-Z]{3})?;")        // header
+            .expression("([^;]+);").optional()   // type
+            .number("(d{6,});")                  // device id
+            .number("d+;").optional()
+            .number("(d+);")                     // version
+            .number("(dddd)(dd)(dd);")           // date
+            .number("(dd):(dd):(dd);")           // time
+            .number("(x+);").optional()          // cell
+            .number("([-+]dd.d+);")              // latitude
+            .number("([-+]ddd.d+);")             // longitude
+            .number("(ddd.ddd);")                // speed
+            .number("(ddd.dd);")                 // course
+            .number("d+;").optional()
+            .number("(d+.d+)?")                  // battery
+            .any()                               // full format
+            .compile();
 
     @Override
     protected Object decode(
             Channel channel, SocketAddress remoteAddress, Object msg) throws Exception {
 
-        String[] values = ((String) msg).split(";");
-
-        String protocol = values[0].substring(0, 5);
-
-        if (protocol.equals("ST910")) {
-            return decode9(channel, remoteAddress, values);
-        } else {
-            return decode23(channel, remoteAddress, protocol, values);
+        Parser parser = new Parser(PATTERN, (String) msg);
+        if (!parser.matches()) {
+            return null;
         }
+
+        Position position = new Position();
+        position.setProtocol(getProtocolName());
+
+        if (parser.hasNext()) {
+            String type = parser.next();
+            if (type.equals("Alert") || type.equals("Emergency")) {
+                position.set(Position.KEY_ALARM, Position.ALARM_GENERAL);
+            }
+        }
+
+        DeviceSession deviceSession = getDeviceSession(channel, remoteAddress, parser.next());
+        if (deviceSession == null) {
+            return null;
+        }
+        position.setDeviceId(deviceSession.getDeviceId());
+
+        position.set(Position.KEY_VERSION, parser.next());
+
+        DateBuilder dateBuilder = new DateBuilder()
+                .setDate(parser.nextInt(), parser.nextInt(), parser.nextInt())
+                .setTime(parser.nextInt(), parser.nextInt(), parser.nextInt());
+        position.setTime(dateBuilder.getDate());
+
+        parser.next(); // location code + bsic
+
+        position.setValid(true);
+        position.setLatitude(parser.nextDouble());
+        position.setLongitude(parser.nextDouble());
+        position.setSpeed(UnitsConverter.knotsFromKph(parser.nextDouble()));
+        position.setCourse(parser.nextDouble());
+
+        position.set(Position.KEY_BATTERY, parser.next());
+
+        return position;
     }
 
 }
